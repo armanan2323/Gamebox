@@ -1,0 +1,251 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: #f7f8f6;
+    color: #1b1d1b;
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button {
+    font: inherit;
+}
+
+button,
+canvas {
+    touch-action: manipulation;
+}
+
+button {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid #e2e5e0;
+    background: rgba(247, 248, 246, .96);
+    backdrop-filter: blur(10px);
+}
+
+.header-inner {
+    width: min(1100px, calc(100% - 32px));
+    min-height: 64px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #171917;
+    font-size: 19px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.offline-badge {
+    padding: 5px 9px;
+    border: 1px solid #dce2da;
+    border-radius: 20px;
+    background: #eef3ed;
+    color: #4f6750;
+    font-size: 12px;
+}
+
+.container {
+    width: min(1100px, calc(100% - 32px));
+    min-height: calc(100vh - 130px);
+    margin: 0 auto;
+    padding: 70px 0;
+}
+
+.intro {
+    max-width: 700px;
+    margin-bottom: 42px;
+}
+
+.eyebrow {
+    margin: 0 0 10px;
+    color: #647065;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.intro h1,
+.game-page-head h1 {
+    margin: 0;
+    color: #171917;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -.035em;
+}
+
+.intro-text {
+    max-width: 620px;
+    margin: 18px 0 0;
+    color: #666d66;
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.game-card {
+    min-height: 180px;
+    padding: 24px;
+    border: 1px solid #e0e3de;
+    border-radius: 14px;
+    background: #fff;
+    color: #1b1d1b;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+
+.game-card:hover {
+    border-color: #cbd2c9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(20, 25, 20, .06);
+}
+
+.game-card:active {
+    transform: translateY(0);
+}
+
+.game-icon {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    background: #eef2ed;
+    font-size: 22px;
+}
+
+.game-card h2 {
+    margin: 0 0 7px;
+    font-size: 20px;
+}
+
+.game-card p {
+    margin: 0;
+    color: #747a74;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.game-page-head {
+    margin-bottom: 28px;
+}
+
+.back-button {
+    margin-bottom: 25px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #687068;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.back-button:hover {
+    color: #171917;
+}
+
+.site-footer {
+    width: min(1100px, calc(100% - 32px));
+    min-height: 66px;
+    margin: 0 auto;
+    padding: 22px 0;
+    border-top: 1px solid #e2e5e0;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    color: #777d77;
+    font-size: 13px;
+}
+
+@media (max-width: 800px) {
+    .container {
+        padding: 48px 0;
+    }
+
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .header-inner,
+    .container,
+    .site-footer {
+        width: min(100% - 24px, 1100px);
+    }
+
+    .header-inner {
+        min-height: 56px;
+    }
+
+    .container {
+        padding: 32px 0 45px;
+    }
+
+    .intro {
+        margin-bottom: 28px;
+    }
+
+    .intro h1,
+    .game-page-head h1 {
+        font-size: 34px;
+    }
+
+    .intro-text {
+        margin-top: 14px;
+        font-size: 15px;
+    }
+
+    .games-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .game-card {
+        min-height: 135px;
+        padding: 18px;
+    }
+
+    .game-icon {
+        margin-bottom: 18px;
+    }
+
+    .site-footer {
+        flex-direction: column;
+        gap: 6px;
+    }
+}

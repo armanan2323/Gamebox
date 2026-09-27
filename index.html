@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="GameBox - коллекция офлайн-игр">
+    <title>GameBox</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/games.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <button class="brand" id="homeButton">
+                GameBox
+            </button>
+
+            <span class="offline-badge">
+                Офлайн
+            </span>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section id="homeView">
+            <div class="intro">
+                <p class="eyebrow">Браузерные игры</p>
+
+                <h1>Играй без интернета.</h1>
+
+                <p class="intro-text">
+                    Шесть небольших игр, которые работают
+                    прямо на устройстве. Без аккаунтов,
+                    рекламы и внешних сервисов.
+                </p>
+            </div>
+
+            <div class="games-grid">
+
+                <button class="game-card" data-game="snake">
+                    <span class="game-icon">●</span>
+                    <span class="game-name">Snake</span>
+                    <span class="game-description">
+                        Собирай яблоки и не врезайся в себя.
+                    </span>
+                </button>
+
+                <button class="game-card" data-game="tetris">
+                    <span class="game-icon">▦</span>
+                    <span class="game-name">Tetris</span>
+                    <span class="game-description">
+                        Собирай линии из падающих фигур.
+                    </span>
+                </button>
+
+                <button class="game-card" data-game="minesweeper">
+                    <span class="game-icon">×</span>
+                    <span class="game-name">Minesweeper</span>
+                    <span class="game-description">
+                        Открывай клетки и обходи мины.
+                    </span>
+                </button>
+
+                <button class="game-card" data-game="pong">
+                    <span class="game-icon">↔</span>
+                    <span class="game-name">Pong</span>
+                    <span class="game-description">
+                        Отбивай мяч против компьютера.
+                    </span>
+                </button>
+
+                <button class="game-card" data-game="memory">
+                    <span class="game-icon">◇</span>
+                    <span class="game-name">Memory</span>
+                    <span class="game-description">
+                        Находи пары одинаковых карточек.
+                    </span>
+                </button>
+
+                <button class="game-card" data-game="tic-tac-toe">
+                    <span class="game-icon">○</span>
+                    <span class="game-name">Tic-Tac-Toe</span>
+                    <span class="game-description">
+                        Классические крестики-нолики.
+                    </span>
+                </button>
+
+            </div>
+        </section>
+
+        <section id="gameView" class="hidden">
+
+            <div class="game-page-head">
+                <button id="backButton" class="back-button">
+                    ← Все игры
+                </button>
+
+                <div>
+                    <p id="gameCategory" class="eyebrow">
+                        Игра
+                    </p>
+
+                    <h1 id="gameTitle">
+                        Игра
+                    </h1>
+                </div>
+            </div>
+
+            <div id="gameRoot"></div>
+
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <span>GameBox</span>
+        <span>Работает без интернета</span>
+    </footer>
+
+    <script src="js/games/snake.js"></script>
+    <script src="js/games/tetris.js"></script>
+    <script src="js/games/minesweeper.js"></script>
+    <script src="js/games/pong.js"></script>
+    <script src="js/games/memory.js"></script>
+    <script src="js/games/tic-tac-toe.js"></script>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

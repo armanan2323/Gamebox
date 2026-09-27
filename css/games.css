@@ -1,0 +1,444 @@
+.game-box {
+    width: 100%;
+    padding: 22px;
+    border: 1px solid #e0e3de;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.game-toolbar {
+    min-height: 42px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.game-toolbar strong {
+    font-size: 18px;
+}
+
+.game-button {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid #d9ddd8;
+    border-radius: 8px;
+    background: #f4f5f3;
+    color: #222522;
+    cursor: pointer;
+}
+
+.game-button:hover {
+    background: #ebeeea;
+}
+
+.game-status {
+    margin: 15px 0 0;
+    color: #687068;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.mode-switch {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto 16px;
+    padding: 4px;
+    border: 1px solid #dfe2dd;
+    border-radius: 9px;
+    background: #f1f3f0;
+}
+
+.mode-button {
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    color: #686e68;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.mode-button.active {
+    background: #fff;
+    color: #1b1d1b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+.mode-button:hover {
+    color: #1b1d1b;
+}
+
+.ttt-board {
+    width: min(420px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.ttt-cell {
+    aspect-ratio: 1;
+    border: 1px solid #dfe2dd;
+    border-radius: 10px;
+    background: #f7f8f6;
+    color: #1b1d1b;
+    font-size: clamp(34px, 9vw, 60px);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ttt-cell:hover {
+    background: #eef1ed;
+}
+
+.pong-wrap {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.pong-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 700 / 420;
+    border-radius: 10px;
+    touch-action: none;
+}
+
+.pong-mobile-controls {
+    display: none;
+    max-width: 700px;
+    margin: 14px auto 0;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.pong-control-group {
+    display: flex;
+    gap: 8px;
+}
+
+.pong-control {
+    width: 64px;
+    height: 52px;
+    border: 1px solid #dfe2dd;
+    border-radius: 10px;
+    background: #f1f3f0;
+    color: #1b1d1b;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.pong-control:active {
+    background: #e2e5e1;
+    transform: scale(.97);
+}
+
+.hidden-mobile-control {
+    display: none;
+}
+
+.snake-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.snake-canvas {
+    display: block;
+    width: min(500px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background: #161917;
+    touch-action: none;
+}
+
+.mobile-dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 58px);
+    grid-template-rows: repeat(2, 52px);
+    gap: 7px;
+    margin: 15px auto 0;
+}
+
+.mobile-dpad button {
+    border: 1px solid #dfe2dd;
+    border-radius: 9px;
+    background: #f1f3f0;
+    color: #1b1d1b;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.mobile-dpad button:active {
+    background: #e1e5e0;
+    transform: scale(.96);
+}
+
+.dpad-up {
+    grid-column: 2;
+}
+
+.dpad-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.dpad-down {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.dpad-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.tetris-layout {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.tetris-canvas {
+    display: block;
+    width: min(300px, 72vw);
+    height: auto;
+    aspect-ratio: 1 / 2;
+    border-radius: 8px;
+    background: #161917;
+}
+
+.tetris-side {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tetris-next {
+    width: 100%;
+    border: 1px solid #e0e3de;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+}
+
+.tetris-next strong {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.tetris-next-canvas {
+    width: 90px;
+    height: 90px;
+    max-width: 100%;
+}
+
+.tetris-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.tetris-controls button {
+    min-height: 48px;
+    border: 1px solid #dfe2dd;
+    border-radius: 8px;
+    background: #f1f3f0;
+    cursor: pointer;
+    font-size: 18px;
+    touch-action: none;
+}
+
+.tetris-controls button:active {
+    background: #e1e5e0;
+}
+
+.tetris-rotate {
+    grid-column: 2;
+}
+
+.tetris-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.tetris-down {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.tetris-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.tetris-drop {
+    grid-column: 1 / 4;
+}
+
+.minesweeper-board {
+    width: min(520px, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: 3px;
+}
+
+.mine-cell {
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid #d3d7d1;
+    border-radius: 4px;
+    background: #e9ece7;
+    color: #202420;
+    font-size: clamp(11px, 3vw, 20px);
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.mine-cell:hover {
+    background: #dde1db;
+}
+
+.mine-cell.open {
+    background: #fff;
+}
+
+.mine-cell.mine {
+    background: #e8d8d8;
+}
+
+.memory-board {
+    width: min(560px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.memory-card {
+    aspect-ratio: 1;
+    padding: 0;
+    border: 1px solid #dfe2dd;
+    border-radius: 10px;
+    background: #edf1eb;
+    color: #1b1d1b;
+    font-size: clamp(22px, 7vw, 38px);
+    cursor: pointer;
+    perspective: 500px;
+    touch-action: manipulation;
+}
+
+.memory-card.flipped,
+.memory-card.matched {
+    background: #fff;
+}
+
+.memory-card.matched {
+    border-color: #bfcabe;
+}
+
+.memory-symbol {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 700px) {
+    .game-box {
+        padding: 16px;
+    }
+
+    .pong-mobile-controls {
+        display: flex;
+    }
+
+    .tetris-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .tetris-side {
+        width: min(300px, 100%);
+    }
+}
+
+@media (max-width: 560px) {
+    .game-toolbar {
+        align-items: flex-start;
+    }
+
+    .game-toolbar strong {
+        font-size: 16px;
+    }
+
+    .game-button {
+        min-height: 42px;
+        padding: 8px 12px;
+    }
+
+    .mode-switch {
+        width: 100%;
+    }
+
+    .mode-button {
+        flex: 1;
+        min-height: 38px;
+    }
+
+    .pong-control {
+        width: 58px;
+        height: 50px;
+    }
+
+    .pong-mobile-controls {
+        gap: 8px;
+    }
+
+    .mobile-dpad {
+        grid-template-columns: repeat(3, 60px);
+        grid-template-rows: repeat(2, 54px);
+    }
+
+    .memory-board {
+        gap: 6px;
+    }
+
+    .mine-cell {
+        border-radius: 3px;
+    }
+}
+
+@media (max-width: 380px) {
+    .game-box {
+        padding: 12px;
+    }
+
+    .mobile-dpad {
+        grid-template-columns: repeat(3, 54px);
+        grid-template-rows: repeat(2, 50px);
+    }
+
+    .pong-control {
+        width: 52px;
+        height: 46px;
+    }
+}
