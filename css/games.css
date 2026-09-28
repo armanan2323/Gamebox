@@ -28,6 +28,7 @@
     background: #f5f7f4;
     color: #303530;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .game-button:hover {
@@ -55,8 +56,9 @@
     margin: 0 auto;
     border: 1px solid #dfe3dd;
     border-radius: 10px;
-    background: #111411;
+    background: #000;
     image-rendering: auto;
+    touch-action: none;
 }
 
 .mode-switch {
@@ -72,6 +74,7 @@
     background: #f7f8f6;
     color: #687068;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .mode-button.active {
@@ -81,7 +84,7 @@
 }
 
 .mobile-controls {
-    display: flex;
+    display: none;
     justify-content: center;
     gap: 10px;
     margin-top: 14px;
@@ -91,16 +94,21 @@
     min-width: 58px;
     min-height: 48px;
     padding: 8px 16px;
-    border: 1px solid #d8ddd6;
-    border-radius: 9px;
-    background: #f3f5f2;
-    color: #303530;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
     font-size: 20px;
     cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-controls button:active {
-    background: #e5eae3;
+    background: #3f8f55;
+    border-color: #3f8f55;
 }
 
 .mobile-dpad {
@@ -114,12 +122,21 @@
 }
 
 .mobile-dpad button {
-    border: 1px solid #d8ddd6;
-    border-radius: 8px;
-    background: #f3f5f2;
-    color: #303530;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
     cursor: pointer;
     font-size: 18px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-dpad button:active {
+    background: #3f8f55;
+    border-color: #3f8f55;
 }
 
 .dpad-up {
@@ -148,7 +165,13 @@
     width: 100%;
     height: auto;
     border-radius: 10px;
-    background: #161917;
+    background: #000;
+    touch-action: none;
+}
+
+.snake-mobile-controls {
+    display: none;
+    margin-top: 18px;
 }
 
 .tetris-layout {
@@ -164,7 +187,8 @@
     height: auto;
     margin: 0 auto;
     border-radius: 10px;
-    background: #111411;
+    background: #000;
+    touch-action: none;
 }
 
 .tetris-side {
@@ -198,6 +222,7 @@
     border-radius: 7px;
     background: #f3f5f2;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .tetris-controls .tetris-left {
@@ -226,7 +251,8 @@
     width: 100%;
     height: auto;
     border-radius: 10px;
-    background: #111411;
+    background: #000;
+    touch-action: none;
 }
 
 .pong-mobile-controls {
@@ -243,11 +269,18 @@
 
 .pong-control-group button {
     min-width: 58px;
-    min-height: 45px;
-    border: 1px solid #d8ddd6;
-    border-radius: 8px;
-    background: #f3f5f2;
+    min-height: 50px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
     cursor: pointer;
+    touch-action: none;
+    user-select: none;
+}
+
+.pong-control-group button:active {
+    background: #3f8f55;
 }
 
 .player-two-controls {
@@ -270,6 +303,7 @@
     color: #263026;
     cursor: pointer;
     font-size: clamp(22px, 5vw, 34px);
+    touch-action: manipulation;
 }
 
 .memory-card.open,
@@ -301,6 +335,7 @@
     color: #202420;
     font-size: clamp(36px, 9vw, 64px);
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .ttt-cell:hover {
@@ -325,6 +360,7 @@
     font-size: clamp(11px, 2.5vw, 17px);
     font-weight: 700;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .mine-cell.open {
@@ -350,6 +386,7 @@
     gap: 8px;
     border-radius: 10px;
     background: #dfe4dd;
+    touch-action: none;
 }
 
 .tile-2048 {
@@ -414,16 +451,19 @@
     border: 0;
     border-radius: 50%;
     background: #f7f8f6;
-    box-shadow: inset 0 0 0 1px #d2d8d0;
+    box-shadow: inset 0 0 0 2px #c5cbc3;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .connect-four-cell.red {
-    background: #aeb8ab;
+    background: #e53935 !important;
+    box-shadow: inset 0 0 0 2px #b71c1c;
 }
 
 .connect-four-cell.yellow {
-    background: #737d72;
+    background: #fbc02d !important;
+    box-shadow: inset 0 0 0 2px #f57f17;
 }
 
 .sudoku-board {
@@ -445,6 +485,7 @@
     color: #293129;
     font-size: clamp(14px, 3vw, 23px);
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .sudoku-cell.border-right {
@@ -472,12 +513,13 @@
 }
 
 .number-pad button {
-    min-height: 42px;
+    min-height: 48px;
     border: 1px solid #d8ddd6;
     border-radius: 8px;
     background: #f4f6f3;
     color: #303530;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .chess-board,
@@ -498,6 +540,7 @@
     background: #e9ede7;
     color: #252a25;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .chess-cell.dark,
@@ -539,203 +582,6 @@
     color: #303530;
 }
 
-.battleship-board {
-    width: min(520px, 100%);
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
-}
-
-.battle-cell {
-    aspect-ratio: 1;
-    padding: 0;
-    border: 1px solid #d3d9d1;
-    border-radius: 5px;
-    background: #e8eee6;
-    color: #4b594b;
-    font-size: 22px;
-    cursor: pointer;
-}
-
-.battle-cell:hover {
-    background: #dde5db;
-}
-
-.battle-cell.hit {
-    background: #8d9b8b;
-    color: #fff;
-}
-
-.battle-cell.miss {
-    background: #f4f6f3;
-    color: #858d84;
-}
-
-.puzzle15-board {
-    width: min(500px, 100%);
-    margin: 0 auto;
-    padding: 7px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 7px;
-    border-radius: 10px;
-    background: #dfe4dd;
-}
-
-.puzzle15-cell {
-    aspect-ratio: 1;
-    border: 1px solid #d5dad3;
-    border-radius: 8px;
-    background: #fff;
-    color: #303730;
-    font-size: clamp(20px, 6vw, 34px);
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.puzzle15-cell:hover {
-    background: #f0f3ee;
-}
-
-.reaction-area {
-    width: min(650px, 100%);
-    min-height: 360px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #dfe3dd;
-    border-radius: 12px;
-    background: #eef1ec;
-}
-
-.reaction-target {
-    width: min(230px, 60%);
-    aspect-ratio: 1;
-    border: 0;
-    border-radius: 50%;
-    background: #7d877c;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.reaction-target.ready {
-    background: #435743;
-}
-
-.breakout-canvas,
-.flappy-canvas,
-.space-canvas,
-.doodle-canvas {
-    max-width: 720px;
-}
-
-@media (max-width: 700px) {
-    .game-box {
-        padding: 14px;
-        border-radius: 12px;
-    }
-
-    .game-toolbar {
-        margin-bottom: 14px;
-    }
-
-    .game-status {
-        font-size: 13px;
-    }
-
-    .tetris-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .tetris-side {
-        width: min(360px, 100%);
-        margin: 0 auto;
-    }
-
-    .tetris-next {
-        width: 100px;
-        height: 100px;
-    }
-
-    .reaction-area {
-        min-height: 280px;
-    }
-}
-
-@media (max-width: 480px) {
-    .game-box {
-        padding: 10px;
-        border: 0;
-    }
-
-    .game-toolbar {
-        gap: 8px;
-    }
-
-    .game-toolbar strong {
-        font-size: 13px;
-    }
-
-    .game-button {
-        padding: 8px 10px;
-        font-size: 13px;
-    }
-
-    .memory-board {
-        gap: 7px;
-    }
-
-    .connect-four-board {
-        gap: 4px;
-        padding: 5px;
-    }
-
-    .battleship-board {
-        gap: 3px;
-    }
-
-    .reaction-area {
-        min-height: 240px;
-    }
-
-    .reaction-target {
-        width: 170px;
-    }
-
-    .mobile-controls {
-        gap: 7px;
-    }
-
-    .mobile-controls button {
-        min-width: 52px;
-        min-height: 44px;
-    }
-}
-
-.connect-four-cell {
-    aspect-ratio: 1;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: #f7f8f6;
-    box-shadow: inset 0 0 0 2px #c5cbc3;
-    cursor: pointer;
-}
-
-.connect-four-cell.red {
-    background: #e53935 !important;
-    box-shadow: inset 0 0 0 2px #b71c1c;
-}
-
-.connect-four-cell.yellow {
-    background: #fbc02d !important;
-    box-shadow: inset 0 0 0 2px #f57f17;
-}
-
 .battleship-info {
     display: flex;
     justify-content: space-between;
@@ -769,6 +615,7 @@
     border-radius: 8px;
     background: #f5f7f4;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .battleship-ship-button {
@@ -814,6 +661,7 @@
     color: #fff;
     font-size: clamp(14px, 3vw, 22px);
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .battle-cell.player-red {
@@ -876,16 +724,96 @@
     margin: 0 auto;
 }
 
-@media (max-width: 480px) {
-    .battleship-info {
-        flex-direction: column;
-        gap: 5px;
-    }
+.puzzle15-board {
+    width: min(500px, 100%);
+    margin: 0 auto;
+    padding: 7px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    border-radius: 10px;
+    background: #dfe4dd;
+}
 
-    .battleship-board,
-    .battleship-target-board {
-        gap: 3px;
-    }
+.puzzle15-cell {
+    aspect-ratio: 1;
+    border: 1px solid #d5dad3;
+    border-radius: 8px;
+    background: #fff;
+    color: #303730;
+    font-size: clamp(20px, 6vw, 34px);
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.puzzle15-cell:hover {
+    background: #f0f3ee;
+}
+
+.reaction-area {
+    width: min(650px, 100%);
+    min-height: 360px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dfe3dd;
+    border-radius: 12px;
+    background: #eef1ec;
+}
+
+.reaction-target {
+    width: min(230px, 60%);
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 50%;
+    background: #7d877c;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.reaction-target.ready {
+    background: #435743;
+}
+
+.breakout-canvas,
+.flappy-canvas,
+.space-canvas,
+.doodle-canvas {
+    display: block;
+    width: min(100%, 720px);
+    height: auto;
+    margin: 0 auto;
+    border-radius: 10px;
+    background: #000;
+    touch-action: none;
+}
+
+.snake-game,
+.pacman-game,
+.reaction-game,
+.quick-math-game {
+    background: #000;
+    color: #fff;
+}
+
+.snake-game .game-toolbar,
+.pacman-game .game-toolbar,
+.reaction-game .game-toolbar,
+.quick-math-game .game-toolbar {
+    color: #fff;
+}
+
+.snake-status,
+.pacman-status,
+.car-status,
+.reaction-status,
+.math-status {
+    color: #aaa;
 }
 
 .mobile-game-controls {
@@ -893,16 +821,16 @@
     width: 100%;
     max-width: 420px;
     margin: 18px auto 0;
-    gap: 14px;
+    gap: 12px;
 }
 
 .mobile-game-button {
     flex: 1;
     min-height: 64px;
-    border: 1px solid #c5cbc3;
+    border: 1px solid #333;
     border-radius: 14px;
-    background: #ffffff;
-    color: #222;
+    background: #111;
+    color: #fff;
     font-size: 30px;
     font-weight: 600;
     cursor: pointer;
@@ -914,52 +842,157 @@
 
 .mobile-game-button:active {
     background: #3f8f55;
-    color: #ffffff;
     border-color: #3f8f55;
 }
 
-.snake-mobile-controls {
-    display: none;
-    margin-top: 18px;
+.reaction-arena {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px 0;
 }
 
-.mobile-dpad {
+.reaction-player {
+    flex: 1;
+    min-height: 230px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    border: 1px solid #333;
+    border-radius: 16px;
+    background: #080808;
 }
 
-.mobile-dpad-middle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.reaction-player-one {
+    border-color: #315cbd;
 }
 
-.mobile-control {
-    width: 68px;
-    height: 58px;
-    border: 1px solid #c5cbc3;
-    border-radius: 14px;
-    background: #ffffff;
-    color: #222;
-    font-size: 27px;
-    font-weight: 600;
+.reaction-player-two {
+    border-color: #a83232;
+}
+
+.reaction-player strong {
+    font-size: 42px;
+}
+
+.reaction-button {
+    width: 150px;
+    height: 80px;
+    border: 0;
+    border-radius: 16px;
+    font-size: 20px;
+    font-weight: 700;
     cursor: pointer;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
 }
 
-.mobile-control:active {
-    background: #3f8f55;
-    color: #ffffff;
+.reaction-button-one {
+    background: #315cbd;
+    color: #fff;
+}
+
+.reaction-button-two {
+    background: #b73535;
+    color: #fff;
+}
+
+.reaction-button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+.reaction-center {
+    width: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.reaction-message {
+    font-size: 20px;
+}
+
+.reaction-timer {
+    font-size: 42px;
+    font-weight: 700;
+}
+
+.reaction-start {
+    display: block;
+    margin: 15px auto 0;
+}
+
+.quick-math-question {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 40px 0;
+    font-size: clamp(34px, 8vw, 64px);
+    font-weight: 700;
+    color: #fff;
+}
+
+.math-answers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.math-answer {
+    min-height: 70px;
+    border: 1px solid #333;
+    border-radius: 14px;
+    background: #111;
+    color: #fff;
+    font-size: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.math-answer:hover {
     border-color: #3f8f55;
 }
 
+.math-answer:active {
+    background: #3f8f55;
+}
+
+.math-answer:disabled {
+    opacity: .45;
+}
+
 @media (max-width: 700px) {
+    .game-box {
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+    }
+
+    .game-toolbar {
+        margin-bottom: 14px;
+    }
+
+    .game-status {
+        font-size: 13px;
+    }
+
     .mobile-game-controls {
+        display: flex;
+    }
+
+    .mobile-controls {
         display: flex;
     }
 
@@ -967,16 +1000,183 @@
         display: block;
     }
 
-    .breakout-canvas,
-    .pong-canvas,
-    .snake-canvas {
-        width: 100%;
-        height: auto;
-        max-width: 100%;
+    .tetris-layout {
+        grid-template-columns: 1fr;
     }
 
-    .game-box {
+    .tetris-side {
+        width: min(360px, 100%);
+        margin: 0 auto;
+    }
+
+    .tetris-next {
+        width: 100px;
+        height: 100px;
+    }
+
+    .reaction-area {
+        min-height: 280px;
+    }
+
+    .reaction-arena {
+        gap: 7px;
+    }
+
+    .reaction-player {
+        min-height: 190px;
+    }
+
+    .reaction-center {
+        width: 70px;
+    }
+
+    .reaction-button {
+        width: 100px;
+        height: 70px;
+        font-size: 16px;
+    }
+
+    .reaction-player strong {
+        font-size: 32px;
+    }
+
+    .reaction-message {
+        font-size: 15px;
+    }
+
+    .reaction-timer {
+        font-size: 30px;
+    }
+
+    .math-answers {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .math-answer {
+        min-height: 64px;
+    }
+
+    .battleship-info {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .battleship-board,
+    .battleship-target-board {
+        gap: 3px;
+    }
+
+    .game-canvas,
+    .snake-canvas,
+    .pacman-canvas,
+    .car-dodge-canvas,
+    .breakout-canvas,
+    .pong-canvas,
+    .flappy-canvas,
+    .space-canvas,
+    .doodle-canvas {
         width: 100%;
+        height: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-box {
+        padding: 10px;
+        border: 0;
+    }
+
+    .game-toolbar {
+        gap: 8px;
+    }
+
+    .game-toolbar strong {
+        font-size: 13px;
+    }
+
+    .game-button {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .mobile-game-button {
+        min-height: 60px;
+        font-size: 27px;
+    }
+
+    .mobile-controls {
+        gap: 7px;
+    }
+
+    .mobile-controls button {
+        min-width: 52px;
+        min-height: 52px;
+    }
+
+    .mobile-control {
+        width: 62px;
+        height: 54px;
+    }
+
+    .memory-board {
+        gap: 7px;
+    }
+
+    .connect-four-board {
+        gap: 4px;
+        padding: 5px;
+    }
+
+    .battleship-board,
+    .battleship-target-board {
+        gap: 3px;
+    }
+
+    .reaction-area {
+        min-height: 240px;
+    }
+
+    .reaction-target {
+        width: 170px;
+    }
+
+    .reaction-arena {
+        gap: 5px;
+    }
+
+    .reaction-player {
+        min-height: 170px;
+    }
+
+    .reaction-button {
+        width: 90px;
+        height: 62px;
+        font-size: 14px;
+    }
+
+    .reaction-player strong {
+        font-size: 28px;
+    }
+
+    .reaction-center {
+        width: 55px;
+    }
+
+    .reaction-message {
+        font-size: 12px;
+    }
+
+    .reaction-timer {
+        font-size: 24px;
+    }
+
+    .math-answer {
+        min-height: 60px;
+        font-size: 21px;
+    }
+
+    .quick-math-question {
+        margin: 28px 0;
     }
 }
 
@@ -985,7 +1185,15 @@
         display: flex;
     }
 
+    .mobile-controls {
+        display: flex;
+    }
+
     .snake-mobile-controls {
         display: block;
+    }
+
+    button {
+        -webkit-tap-highlight-color: transparent;
     }
 }

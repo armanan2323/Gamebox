@@ -1,392 +1,326 @@
 window.createPong = function(root) {
-    root.innerHTML = `
-        <div class="game-box">
-            <div class="game-toolbar">
-                <strong>
-                    Игрок:
-                    <span class="pong-player-score">0</span>
-                    :
-                    <span class="pong-ai-score">0</span>
-                    ИИ
-                </strong>
+    const box = document.createElement("div");
+    box.className = "game-box pong-game";
 
-                <button class="game-button pong-restart">
-                    Заново
-                </button>
-            </div>
+    box.innerHTML = `
+        <div class="game-toolbar">
+            <strong>Pong</strong>
+            <button class="game-button pong-restart">Заново</button>
+        </div>
 
-            <canvas
-                class="game-canvas pong-canvas"
-                width="720"
-                height="420"
-            ></canvas>
+        <div class="mode-switch">
+            <button class="mode-button pong-mode active" data-mode="ai">
+                🤖 Против ИИ
+            </button>
+            <button class="mode-button pong-mode" data-mode="two">
+                👥 Вдвоём
+            </button>
+        </div>
 
-            <p class="game-status pong-status">
-                Управление: W / S или ↑ / ↓
-            </p>
+        <div class="game-status pong-status">
+            Первый до 7 очков
+        </div>
 
-            <div class="mobile-game-controls pong-mobile-buttons">
-                <button
-                    class="mobile-game-button pong-up"
-                    aria-label="Вверх"
-                >↑</button>
+        <div class="pong-wrap">
+            <canvas class="pong-canvas" width="800" height="450"></canvas>
 
-                <button
-                    class="mobile-game-button pong-down"
-                    aria-label="Вниз"
-                >↓</button>
+            <div class="pong-mobile-controls">
+                <div class="pong-control-group">
+                    <button class="pong-control" data-player="1" data-direction="up">
+                        ▲
+                    </button>
+                    <button class="pong-control" data-player="1" data-direction="down">
+                        ▼
+                    </button>
+                </div>
+
+                <div class="pong-control-group player-two-controls">
+                    <button class="pong-control" data-player="2" data-direction="up">
+                        ▲
+                    </button>
+                    <button class="pong-control" data-player="2" data-direction="down">
+                        ▼
+                    </button>
+                </div>
             </div>
         </div>
     `;
 
-    const canvas =
-        root.querySelector(
-            ".pong-canvas"
-        );
+    root.appendChild(box);
 
-    const ctx =
-        canvas.getContext("2d");
+    const canvas = box.querySelector(".pong-canvas");
+    const ctx = canvas.getContext("2d");
 
-    const playerScoreElement =
-        root.querySelector(
-            ".pong-player-score"
-        );
-
-    const aiScoreElement =
-        root.querySelector(
-            ".pong-ai-score"
-        );
-
-    const statusElement =
-        root.querySelector(
-            ".pong-status"
-        );
-
-    const restartButton =
-        root.querySelector(
-            ".pong-restart"
-        );
-
-    const upButton =
-        root.querySelector(
-            ".pong-up"
-        );
-
-    const downButton =
-        root.querySelector(
-            ".pong-down"
-        );
+    const status = box.querySelector(".pong-status");
+    const restartButton = box.querySelector(".pong-restart");
+    const modeButtons = box.querySelectorAll(".pong-mode");
+    const controls = box.querySelectorAll(".pong-control");
 
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
 
-    const paddle = {
-        width: 14,
-        height: 90,
-        speed: 6,
-        x: 25,
-        y: HEIGHT / 2 - 45
-    };
+    const paddleWidth = 14;
+    const paddleHeight = 90;
 
-    const ai = {
-        width: 14,
-        height: 90,
-        speed: 2.5,
-        x: WIDTH - 39,
-        y: HEIGHT / 2 - 45
-    };
+    const playerSpeed = 6;
+    const aiSpeed = 2.8;
 
-    const ball = {
-        radius: 9,
-        x: WIDTH / 2,
-        y: HEIGHT / 2,
-        dx: 3.2,
-        dy: 2
-    };
+    const winningScore = 7;
 
-    const keys = {
-        up: false,
-        down: false
-    };
-
-    let playerScore = 0;
-    let aiScore = 0;
+    let mode = "ai";
     let running = true;
-    let animationId = null;
+    let animationFrame = null;
+
+    let playerOne;
+    let playerTwo;
+    let ball;
+
+    let keys = {
+        w: false,
+        s: false,
+        ArrowUp: false,
+        ArrowDown: false
+    };
+
+    let touchState = {
+        player1Up: false,
+        player1Down: false,
+        player2Up: false,
+        player2Down: false
+    };
+
+    function createState() {
+        playerOne = {
+            x: 25,
+            y: HEIGHT / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            score: 0
+        };
+
+        playerTwo = {
+            x: WIDTH - 25 - paddleWidth,
+            y: HEIGHT / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            score: 0
+        };
+
+        ball = {
+            x: WIDTH / 2,
+            y: HEIGHT / 2,
+            radius: 8,
+            vx: Math.random() > 0.5 ? 3.2 : -3.2,
+            vy: (Math.random() * 2 - 1) * 2.2
+        };
+
+        running = true;
+
+        status.textContent =
+            mode === "ai"
+                ? "Вы против ИИ • Первый до 7 очков"
+                : "Вдвоём • Игрок 1: W/S • Игрок 2: ↑/↓";
+    }
 
     function resetBall(direction) {
         ball.x = WIDTH / 2;
         ball.y = HEIGHT / 2;
 
-        ball.dx =
-            direction * 3.2;
+        const angle = (Math.random() * 1.2 - 0.6);
 
-        ball.dy =
-            (
-                Math.random() > 0.5
-                    ? 1
-                    : -1
-            ) * 1.8;
+        ball.vx = direction * 3.2;
+        ball.vy = Math.sin(angle) * 3.2;
     }
 
-    function reset() {
-        if (animationId) {
-            cancelAnimationFrame(
-                animationId
-            );
-        }
-
-        playerScore = 0;
-        aiScore = 0;
-        running = true;
-
-        playerScoreElement.textContent =
-            "0";
-
-        aiScoreElement.textContent =
-            "0";
-
-        paddle.y =
-            HEIGHT / 2 -
-            paddle.height / 2;
-
-        ai.y =
-            HEIGHT / 2 -
-            ai.height / 2;
-
-        resetBall(
-            Math.random() > 0.5
-                ? 1
-                : -1
-        );
-
-        statusElement.textContent =
-            "Управление: W / S или ↑ / ↓";
-
-        loop();
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
     }
 
-    function updatePlayer() {
-        if (keys.up) {
-            paddle.y -= paddle.speed;
+    function movePlayerOne() {
+        let direction = 0;
+
+        if (keys.w || touchState.player1Up) {
+            direction -= 1;
         }
 
-        if (keys.down) {
-            paddle.y += paddle.speed;
+        if (keys.s || touchState.player1Down) {
+            direction += 1;
         }
 
-        paddle.y = Math.max(
+        playerOne.y += direction * playerSpeed;
+
+        playerOne.y = clamp(
+            playerOne.y,
             0,
-            Math.min(
-                HEIGHT -
-                    paddle.height,
-                paddle.y
-            )
+            HEIGHT - playerOne.height
         );
     }
 
-    function updateAI() {
-        const aiCenter =
-            ai.y +
-            ai.height / 2;
+    function movePlayerTwo() {
+        if (mode === "two") {
+            let direction = 0;
 
-        const difference =
-            ball.y - aiCenter;
-
-        const deadZone = 25;
-
-        if (
-            Math.abs(difference) >
-            deadZone
-        ) {
-            if (difference > 0) {
-                ai.y += ai.speed;
-            } else {
-                ai.y -= ai.speed;
+            if (keys.ArrowUp || touchState.player2Up) {
+                direction -= 1;
             }
+
+            if (keys.ArrowDown || touchState.player2Down) {
+                direction += 1;
+            }
+
+            playerTwo.y += direction * playerSpeed;
+
+            playerTwo.y = clamp(
+                playerTwo.y,
+                0,
+                HEIGHT - playerTwo.height
+            );
+
+            return;
         }
 
-        ai.y = Math.max(
+        const paddleCenter =
+            playerTwo.y + playerTwo.height / 2;
+
+        const target = ball.y;
+
+        if (target < paddleCenter - 25) {
+            playerTwo.y -= aiSpeed;
+        } else if (target > paddleCenter + 25) {
+            playerTwo.y += aiSpeed;
+        }
+
+        playerTwo.y = clamp(
+            playerTwo.y,
             0,
-            Math.min(
-                HEIGHT -
-                    ai.height,
-                ai.y
-            )
+            HEIGHT - playerTwo.height
         );
+    }
+
+    function circleHitsPaddle(paddle) {
+        return (
+            ball.x - ball.radius < paddle.x + paddle.width &&
+            ball.x + ball.radius > paddle.x &&
+            ball.y - ball.radius < paddle.y + paddle.height &&
+            ball.y + ball.radius > paddle.y
+        );
+    }
+
+    function bounceFromPaddle(paddle, direction) {
+        const paddleCenter =
+            paddle.y + paddle.height / 2;
+
+        const relative =
+            (ball.y - paddleCenter) /
+            (paddle.height / 2);
+
+        const maxBounce = Math.PI / 3;
+
+        const angle = relative * maxBounce;
+
+        const speed = Math.min(
+            8,
+            Math.sqrt(
+                ball.vx * ball.vx +
+                ball.vy * ball.vy
+            ) + 0.15
+        );
+
+        ball.vx = direction * speed * Math.cos(angle);
+        ball.vy = speed * Math.sin(angle);
+
+        if (direction === 1) {
+            ball.x = paddle.x + paddle.width + ball.radius;
+        } else {
+            ball.x = paddle.x - ball.radius;
+        }
     }
 
     function updateBall() {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
+        ball.x += ball.vx;
+        ball.y += ball.vy;
 
-        if (
-            ball.y -
-                ball.radius <=
-                0 ||
-            ball.y +
-                ball.radius >=
-                HEIGHT
-        ) {
-            ball.dy *= -1;
+        if (ball.y - ball.radius <= 0) {
+            ball.y = ball.radius;
+            ball.vy *= -1;
+        }
+
+        if (ball.y + ball.radius >= HEIGHT) {
+            ball.y = HEIGHT - ball.radius;
+            ball.vy *= -1;
         }
 
         if (
-            ball.x -
-                ball.radius <=
-                paddle.x +
-                    paddle.width &&
-            ball.x +
-                ball.radius >=
-                paddle.x &&
-            ball.y >=
-                paddle.y &&
-            ball.y <=
-                paddle.y +
-                    paddle.height &&
-            ball.dx < 0
+            ball.vx < 0 &&
+            circleHitsPaddle(playerOne)
         ) {
-            const relative =
-                (
-                    ball.y -
-                    (
-                        paddle.y +
-                        paddle.height /
-                            2
-                    )
-                ) /
-                (
-                    paddle.height /
-                    2
-                );
-
-            ball.dx = 3.2;
-            ball.dy =
-                relative * 2.5;
+            bounceFromPaddle(playerOne, 1);
         }
 
         if (
-            ball.x +
-                ball.radius >=
-                ai.x &&
-            ball.x -
-                ball.radius <=
-                ai.x +
-                    ai.width &&
-            ball.y >= ai.y &&
-            ball.y <=
-                ai.y +
-                    ai.height &&
-            ball.dx > 0
+            ball.vx > 0 &&
+            circleHitsPaddle(playerTwo)
         ) {
-            const relative =
-                (
-                    ball.y -
-                    (
-                        ai.y +
-                        ai.height /
-                            2
-                    )
-                ) /
-                (
-                    ai.height /
-                    2
-                );
-
-            ball.dx = -3.2;
-            ball.dy =
-                relative * 2.5;
+            bounceFromPaddle(playerTwo, -1);
         }
 
-        if (
-            ball.x +
-                ball.radius <
-                0
-        ) {
-            aiScore++;
+        if (ball.x < -ball.radius) {
+            playerTwo.score++;
 
-            aiScoreElement.textContent =
-                aiScore;
-
-            if (aiScore >= 7) {
-                endGame(
-                    "ИИ победил."
-                );
-
-                return;
-            }
-
-            resetBall(1);
-        }
-
-        if (
-            ball.x -
-                ball.radius >
-                WIDTH
-        ) {
-            playerScore++;
-
-            playerScoreElement.textContent =
-                playerScore;
-
-            if (playerScore >= 7) {
-                endGame(
-                    "Ты победил!"
-                );
-
+            if (playerTwo.score >= winningScore) {
+                finishGame(2);
                 return;
             }
 
             resetBall(-1);
         }
+
+        if (ball.x > WIDTH + ball.radius) {
+            playerOne.score++;
+
+            if (playerOne.score >= winningScore) {
+                finishGame(1);
+                return;
+            }
+
+            resetBall(1);
+        }
     }
 
-    function draw() {
-        ctx.clearRect(
-            0,
-            0,
-            WIDTH,
-            HEIGHT
-        );
+    function finishGame(player) {
+        running = false;
 
-        ctx.fillStyle =
-            "#f7f8f6";
+        if (mode === "ai") {
+            status.textContent =
+                player === 1
+                    ? "🏆 Вы победили!"
+                    : "🤖 ИИ победил!";
+        } else {
+            status.textContent =
+                player === 1
+                    ? "🏆 Победил игрок 1!"
+                    : "🏆 Победил игрок 2!";
+        }
+    }
 
-        ctx.fillRect(
-            0,
-            0,
-            WIDTH,
-            HEIGHT
-        );
+    function drawBackground() {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        ctx.setLineDash([
-            8,
-            12
-        ]);
-
-        ctx.strokeStyle =
-            "#c5cbc3";
-
+        ctx.strokeStyle = "#222";
         ctx.lineWidth = 2;
+        ctx.setLineDash([10, 14]);
 
         ctx.beginPath();
-
-        ctx.moveTo(
-            WIDTH / 2,
-            0
-        );
-
-        ctx.lineTo(
-            WIDTH / 2,
-            HEIGHT
-        );
-
+        ctx.moveTo(WIDTH / 2, 0);
+        ctx.lineTo(WIDTH / 2, HEIGHT);
         ctx.stroke();
 
         ctx.setLineDash([]);
+    }
 
-        ctx.fillStyle =
-            "#222";
+    function drawPaddle(paddle) {
+        ctx.fillStyle = "#fff";
 
         ctx.fillRect(
             paddle.x,
@@ -394,14 +328,9 @@ window.createPong = function(root) {
             paddle.width,
             paddle.height
         );
+    }
 
-        ctx.fillRect(
-            ai.x,
-            ai.y,
-            ai.width,
-            ai.height
-        );
-
+    function drawBall() {
         ctx.beginPath();
 
         ctx.arc(
@@ -412,208 +341,264 @@ window.createPong = function(root) {
             Math.PI * 2
         );
 
+        ctx.fillStyle = "#fff";
         ctx.fill();
-
-        ctx.closePath();
     }
 
-    function endGame(message) {
-        running = false;
+    function drawScore() {
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 48px Arial";
+        ctx.textAlign = "center";
 
-        statusElement.textContent =
-            `${message} Нажми «Заново».`;
+        ctx.fillText(
+            playerOne.score,
+            WIDTH / 2 - 70,
+            60
+        );
 
-        draw();
+        ctx.fillText(
+            playerTwo.score,
+            WIDTH / 2 + 70,
+            60
+        );
     }
 
-    function keyDown(event) {
-        const key =
-            event.key.toLowerCase();
+    function drawLabels() {
+        ctx.fillStyle = "#777";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
 
-        if (
-            key === "w" ||
-            event.key === "ArrowUp"
-        ) {
-            keys.up = true;
-            event.preventDefault();
-        }
+        ctx.fillText(
+            "PLAYER 1",
+            WIDTH / 2 - 70,
+            82
+        );
 
-        if (
-            key === "s" ||
-            event.key === "ArrowDown"
-        ) {
-            keys.down = true;
-            event.preventDefault();
-        }
+        ctx.fillText(
+            mode === "ai" ? "AI" : "PLAYER 2",
+            WIDTH / 2 + 70,
+            82
+        );
     }
 
-    function keyUp(event) {
-        const key =
-            event.key.toLowerCase();
-
-        if (
-            key === "w" ||
-            event.key === "ArrowUp"
-        ) {
-            keys.up = false;
-            event.preventDefault();
-        }
-
-        if (
-            key === "s" ||
-            event.key === "ArrowDown"
-        ) {
-            keys.down = false;
-            event.preventDefault();
-        }
+    function draw() {
+        drawBackground();
+        drawScore();
+        drawLabels();
+        drawPaddle(playerOne);
+        drawPaddle(playerTwo);
+        drawBall();
     }
 
-    function holdButton(
-        button,
-        key
-    ) {
-        const start = event => {
-            event.preventDefault();
-            keys[key] = true;
-        };
-
-        const stop = event => {
-            event.preventDefault();
-            keys[key] = false;
-        };
-
-        button.addEventListener(
-            "pointerdown",
-            start
-        );
-
-        button.addEventListener(
-            "pointerup",
-            stop
-        );
-
-        button.addEventListener(
-            "pointercancel",
-            stop
-        );
-
-        button.addEventListener(
-            "pointerleave",
-            stop
-        );
-
-        return {
-            start,
-            stop
-        };
-    }
-
-    const upHandlers =
-        holdButton(
-            upButton,
-            "up"
-        );
-
-    const downHandlers =
-        holdButton(
-            downButton,
-            "down"
-        );
-
-    function loop() {
+    function updateStatus() {
         if (!running) {
-            draw();
             return;
         }
 
-        updatePlayer();
-        updateAI();
-        updateBall();
-        draw();
-
-        animationId =
-            requestAnimationFrame(
-                loop
-            );
+        if (mode === "ai") {
+            status.textContent =
+                `Вы ${playerOne.score} : ${playerTwo.score} ИИ`;
+        } else {
+            status.textContent =
+                `Игрок 1 ${playerOne.score} : ${playerTwo.score} Игрок 2`;
+        }
     }
 
-    document.addEventListener(
-        "keydown",
-        keyDown
-    );
-
-    document.addEventListener(
-        "keyup",
-        keyUp
-    );
-
-    restartButton.addEventListener(
-        "click",
-        reset
-    );
-
-    reset();
-
-    return function cleanup() {
-        if (animationId) {
-            cancelAnimationFrame(
-                animationId
-            );
+    function loop() {
+        if (running) {
+            movePlayerOne();
+            movePlayerTwo();
+            updateBall();
+            updateStatus();
         }
 
-        document.removeEventListener(
+        draw();
+
+        animationFrame = requestAnimationFrame(loop);
+    }
+
+    function setMode(newMode) {
+        mode = newMode;
+
+        modeButtons.forEach(button => {
+            button.classList.toggle(
+                "active",
+                button.dataset.mode === mode
+            );
+        });
+
+        createState();
+    }
+
+    function handleKeyDown(event) {
+        const key = event.key;
+
+        if (
+            key === "ArrowUp" ||
+            key === "ArrowDown"
+        ) {
+            event.preventDefault();
+        }
+
+        if (key.toLowerCase() === "w") {
+            keys.w = true;
+        }
+
+        if (key.toLowerCase() === "s") {
+            keys.s = true;
+        }
+
+        if (key === "ArrowUp") {
+            keys.ArrowUp = true;
+        }
+
+        if (key === "ArrowDown") {
+            keys.ArrowDown = true;
+        }
+
+        if (key === " ") {
+            if (!running) {
+                createState();
+            }
+        }
+    }
+
+    function handleKeyUp(event) {
+        const key = event.key;
+
+        if (key.toLowerCase() === "w") {
+            keys.w = false;
+        }
+
+        if (key.toLowerCase() === "s") {
+            keys.s = false;
+        }
+
+        if (key === "ArrowUp") {
+            keys.ArrowUp = false;
+        }
+
+        if (key === "ArrowDown") {
+            keys.ArrowDown = false;
+        }
+    }
+
+    function setTouch(player, direction, value) {
+        if (player === 1 && direction === "up") {
+            touchState.player1Up = value;
+        }
+
+        if (player === 1 && direction === "down") {
+            touchState.player1Down = value;
+        }
+
+        if (player === 2 && direction === "up") {
+            touchState.player2Up = value;
+        }
+
+        if (player === 2 && direction === "down") {
+            touchState.player2Down = value;
+        }
+    }
+
+    function handleControlStart(event) {
+        event.preventDefault();
+
+        const button = event.currentTarget;
+
+        setTouch(
+            Number(button.dataset.player),
+            button.dataset.direction,
+            true
+        );
+    }
+
+    function handleControlEnd(event) {
+        event.preventDefault();
+
+        const button = event.currentTarget;
+
+        setTouch(
+            Number(button.dataset.player),
+            button.dataset.direction,
+            false
+        );
+    }
+
+    modeButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            setMode(button.dataset.mode);
+        });
+    });
+
+    restartButton.addEventListener("click", () => {
+        createState();
+    });
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    controls.forEach(button => {
+        button.addEventListener(
+            "pointerdown",
+            handleControlStart
+        );
+
+        button.addEventListener(
+            "pointerup",
+            handleControlEnd
+        );
+
+        button.addEventListener(
+            "pointercancel",
+            handleControlEnd
+        );
+
+        button.addEventListener(
+            "pointerleave",
+            handleControlEnd
+        );
+    });
+
+    createState();
+    draw();
+    loop();
+
+    return function cleanup() {
+        if (animationFrame) {
+            cancelAnimationFrame(animationFrame);
+        }
+
+        window.removeEventListener(
             "keydown",
-            keyDown
+            handleKeyDown
         );
 
-        document.removeEventListener(
+        window.removeEventListener(
             "keyup",
-            keyUp
+            handleKeyUp
         );
 
-        restartButton.removeEventListener(
-            "click",
-            reset
-        );
+        controls.forEach(button => {
+            button.removeEventListener(
+                "pointerdown",
+                handleControlStart
+            );
 
-        upButton.removeEventListener(
-            "pointerdown",
-            upHandlers.start
-        );
+            button.removeEventListener(
+                "pointerup",
+                handleControlEnd
+            );
 
-        upButton.removeEventListener(
-            "pointerup",
-            upHandlers.stop
-        );
+            button.removeEventListener(
+                "pointercancel",
+                handleControlEnd
+            );
 
-        upButton.removeEventListener(
-            "pointercancel",
-            upHandlers.stop
-        );
-
-        upButton.removeEventListener(
-            "pointerleave",
-            upHandlers.stop
-        );
-
-        downButton.removeEventListener(
-            "pointerdown",
-            downHandlers.start
-        );
-
-        downButton.removeEventListener(
-            "pointerup",
-            downHandlers.stop
-        );
-
-        downButton.removeEventListener(
-            "pointercancel",
-            downHandlers.stop
-        );
-
-        downButton.removeEventListener(
-            "pointerleave",
-            downHandlers.stop
-        );
+            button.removeEventListener(
+                "pointerleave",
+                handleControlEnd
+            );
+        });
     };
 };

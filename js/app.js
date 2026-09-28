@@ -8,6 +8,42 @@ const games = {
         create: "createSnake"
     },
 
+    pacman: {
+    title: "Pac-Man",
+    icon: "🟡",
+    desc: "Собирай точки и убегай от призраков",
+    category: "Аркады",
+    group: "arcade",
+    create: "createPacman"
+},
+
+carDodge: {
+    title: "Car Dodge",
+    icon: "🚗",
+    desc: "Уклоняйся от машин",
+    category: "Аркады",
+    group: "arcade",
+    create: "createCarDodge"
+},
+
+reactionBattle: {
+    title: "Reaction Battle",
+    icon: "⚡",
+    desc: "Кто быстрее отреагирует",
+    category: "Два игрока",
+    group: "twoPlayer",
+    create: "createReactionBattle"
+},
+
+quickMath: {
+    title: "Quick Math",
+    icon: "🧮",
+    desc: "Решай примеры на скорость",
+    category: "На реакцию",
+    group: "reaction",
+    create: "createQuickMath"
+},
+
     tetris: {
         title: "Tetris",
         icon: "🧱",
