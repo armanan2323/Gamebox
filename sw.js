@@ -27,7 +27,11 @@ const FILES = [
     "./js/games/battleship.js",
     "./js/games/puzzle-15.js",
     "./js/games/reaction.js",
-    "./js/games/doodle-jump.js"
+    "./js/games/doodle-jump.js",
+    "./js/games/car-dodge.js",
+    "./js/games/pacman.js",
+    "./js/games/quick-math.js",
+    "./js/games/reaction-battle.js"
 ];
 
 self.addEventListener("install", event => {
