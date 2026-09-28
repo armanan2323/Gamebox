@@ -24,11 +24,28 @@ window.createPong = function(root) {
             <p class="game-status pong-status">
                 Управление: W / S или ↑ / ↓
             </p>
+
+            <div class="mobile-game-controls pong-mobile-buttons">
+                <button
+                    class="mobile-game-button pong-up"
+                    aria-label="Вверх"
+                >↑</button>
+
+                <button
+                    class="mobile-game-button pong-down"
+                    aria-label="Вниз"
+                >↓</button>
+            </div>
         </div>
     `;
 
-    const canvas = root.querySelector(".pong-canvas");
-    const ctx = canvas.getContext("2d");
+    const canvas =
+        root.querySelector(
+            ".pong-canvas"
+        );
+
+    const ctx =
+        canvas.getContext("2d");
 
     const playerScoreElement =
         root.querySelector(
@@ -48,6 +65,16 @@ window.createPong = function(root) {
     const restartButton =
         root.querySelector(
             ".pong-restart"
+        );
+
+    const upButton =
+        root.querySelector(
+            ".pong-up"
+        );
+
+    const downButton =
+        root.querySelector(
+            ".pong-down"
         );
 
     const WIDTH = canvas.width;
@@ -91,15 +118,15 @@ window.createPong = function(root) {
         ball.x = WIDTH / 2;
         ball.y = HEIGHT / 2;
 
-        const speed = 3.2;
-
         ball.dx =
-            direction * speed;
+            direction * 3.2;
 
         ball.dy =
-            (Math.random() > 0.5
-                ? 1
-                : -1) * 1.8;
+            (
+                Math.random() > 0.5
+                    ? 1
+                    : -1
+            ) * 1.8;
     }
 
     function reset() {
@@ -139,6 +166,181 @@ window.createPong = function(root) {
         loop();
     }
 
+    function updatePlayer() {
+        if (keys.up) {
+            paddle.y -= paddle.speed;
+        }
+
+        if (keys.down) {
+            paddle.y += paddle.speed;
+        }
+
+        paddle.y = Math.max(
+            0,
+            Math.min(
+                HEIGHT -
+                    paddle.height,
+                paddle.y
+            )
+        );
+    }
+
+    function updateAI() {
+        const aiCenter =
+            ai.y +
+            ai.height / 2;
+
+        const difference =
+            ball.y - aiCenter;
+
+        const deadZone = 25;
+
+        if (
+            Math.abs(difference) >
+            deadZone
+        ) {
+            if (difference > 0) {
+                ai.y += ai.speed;
+            } else {
+                ai.y -= ai.speed;
+            }
+        }
+
+        ai.y = Math.max(
+            0,
+            Math.min(
+                HEIGHT -
+                    ai.height,
+                ai.y
+            )
+        );
+    }
+
+    function updateBall() {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        if (
+            ball.y -
+                ball.radius <=
+                0 ||
+            ball.y +
+                ball.radius >=
+                HEIGHT
+        ) {
+            ball.dy *= -1;
+        }
+
+        if (
+            ball.x -
+                ball.radius <=
+                paddle.x +
+                    paddle.width &&
+            ball.x +
+                ball.radius >=
+                paddle.x &&
+            ball.y >=
+                paddle.y &&
+            ball.y <=
+                paddle.y +
+                    paddle.height &&
+            ball.dx < 0
+        ) {
+            const relative =
+                (
+                    ball.y -
+                    (
+                        paddle.y +
+                        paddle.height /
+                            2
+                    )
+                ) /
+                (
+                    paddle.height /
+                    2
+                );
+
+            ball.dx = 3.2;
+            ball.dy =
+                relative * 2.5;
+        }
+
+        if (
+            ball.x +
+                ball.radius >=
+                ai.x &&
+            ball.x -
+                ball.radius <=
+                ai.x +
+                    ai.width &&
+            ball.y >= ai.y &&
+            ball.y <=
+                ai.y +
+                    ai.height &&
+            ball.dx > 0
+        ) {
+            const relative =
+                (
+                    ball.y -
+                    (
+                        ai.y +
+                        ai.height /
+                            2
+                    )
+                ) /
+                (
+                    ai.height /
+                    2
+                );
+
+            ball.dx = -3.2;
+            ball.dy =
+                relative * 2.5;
+        }
+
+        if (
+            ball.x +
+                ball.radius <
+                0
+        ) {
+            aiScore++;
+
+            aiScoreElement.textContent =
+                aiScore;
+
+            if (aiScore >= 7) {
+                endGame(
+                    "ИИ победил."
+                );
+
+                return;
+            }
+
+            resetBall(1);
+        }
+
+        if (
+            ball.x -
+                ball.radius >
+                WIDTH
+        ) {
+            playerScore++;
+
+            playerScoreElement.textContent =
+                playerScore;
+
+            if (playerScore >= 7) {
+                endGame(
+                    "Ты победил!"
+                );
+
+                return;
+            }
+
+            resetBall(-1);
+        }
+    }
+
     function draw() {
         ctx.clearRect(
             0,
@@ -147,7 +349,8 @@ window.createPong = function(root) {
             HEIGHT
         );
 
-        ctx.fillStyle = "#f7f8f6";
+        ctx.fillStyle =
+            "#f7f8f6";
 
         ctx.fillRect(
             0,
@@ -182,7 +385,8 @@ window.createPong = function(root) {
 
         ctx.setLineDash([]);
 
-        ctx.fillStyle = "#222";
+        ctx.fillStyle =
+            "#222";
 
         ctx.fillRect(
             paddle.x,
@@ -211,152 +415,6 @@ window.createPong = function(root) {
         ctx.fill();
 
         ctx.closePath();
-    }
-
-    function updatePlayer() {
-        if (keys.up) {
-            paddle.y -= paddle.speed;
-        }
-
-        if (keys.down) {
-            paddle.y += paddle.speed;
-        }
-
-        paddle.y = Math.max(
-            0,
-            Math.min(
-                HEIGHT - paddle.height,
-                paddle.y
-            )
-        );
-    }
-
-    function updateAI() {
-        const aiCenter =
-            ai.y +
-            ai.height / 2;
-
-        const difference =
-            ball.y - aiCenter;
-
-        const deadZone = 25;
-
-        if (
-            Math.abs(difference) >
-            deadZone
-        ) {
-            if (difference > 0) {
-                ai.y += ai.speed;
-            } else {
-                ai.y -= ai.speed;
-            }
-        }
-
-        ai.y = Math.max(
-            0,
-            Math.min(
-                HEIGHT - ai.height,
-                ai.y
-            )
-        );
-    }
-
-    function updateBall() {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-
-        if (
-            ball.y - ball.radius <= 0 ||
-            ball.y + ball.radius >= HEIGHT
-        ) {
-            ball.dy *= -1;
-        }
-
-        if (
-            ball.x - ball.radius <=
-                paddle.x + paddle.width &&
-            ball.x + ball.radius >=
-                paddle.x &&
-            ball.y >= paddle.y &&
-            ball.y <=
-                paddle.y + paddle.height &&
-            ball.dx < 0
-        ) {
-            const relative =
-                (
-                    ball.y -
-                    (
-                        paddle.y +
-                        paddle.height / 2
-                    )
-                ) /
-                (paddle.height / 2);
-
-            ball.dx = 3.2;
-            ball.dy =
-                relative * 2.5;
-        }
-
-        if (
-            ball.x + ball.radius >= ai.x &&
-            ball.x - ball.radius <=
-                ai.x + ai.width &&
-            ball.y >= ai.y &&
-            ball.y <=
-                ai.y + ai.height &&
-            ball.dx > 0
-        ) {
-            const relative =
-                (
-                    ball.y -
-                    (
-                        ai.y +
-                        ai.height / 2
-                    )
-                ) /
-                (ai.height / 2);
-
-            ball.dx = -3.2;
-            ball.dy =
-                relative * 2.5;
-        }
-
-        if (
-            ball.x + ball.radius < 0
-        ) {
-            aiScore++;
-
-            aiScoreElement.textContent =
-                aiScore;
-
-            if (aiScore >= 7) {
-                endGame(
-                    "ИИ победил."
-                );
-                return;
-            }
-
-            resetBall(1);
-        }
-
-        if (
-            ball.x - ball.radius >
-            WIDTH
-        ) {
-            playerScore++;
-
-            playerScoreElement.textContent =
-                playerScore;
-
-            if (playerScore >= 7) {
-                endGame(
-                    "Ты победил!"
-                );
-                return;
-            }
-
-            resetBall(-1);
-        }
     }
 
     function endGame(message) {
@@ -410,6 +468,58 @@ window.createPong = function(root) {
         }
     }
 
+    function holdButton(
+        button,
+        key
+    ) {
+        const start = event => {
+            event.preventDefault();
+            keys[key] = true;
+        };
+
+        const stop = event => {
+            event.preventDefault();
+            keys[key] = false;
+        };
+
+        button.addEventListener(
+            "pointerdown",
+            start
+        );
+
+        button.addEventListener(
+            "pointerup",
+            stop
+        );
+
+        button.addEventListener(
+            "pointercancel",
+            stop
+        );
+
+        button.addEventListener(
+            "pointerleave",
+            stop
+        );
+
+        return {
+            start,
+            stop
+        };
+    }
+
+    const upHandlers =
+        holdButton(
+            upButton,
+            "up"
+        );
+
+    const downHandlers =
+        holdButton(
+            downButton,
+            "down"
+        );
+
     function loop() {
         if (!running) {
             draw();
@@ -422,7 +532,9 @@ window.createPong = function(root) {
         draw();
 
         animationId =
-            requestAnimationFrame(loop);
+            requestAnimationFrame(
+                loop
+            );
     }
 
     document.addEventListener(
@@ -462,6 +574,46 @@ window.createPong = function(root) {
         restartButton.removeEventListener(
             "click",
             reset
+        );
+
+        upButton.removeEventListener(
+            "pointerdown",
+            upHandlers.start
+        );
+
+        upButton.removeEventListener(
+            "pointerup",
+            upHandlers.stop
+        );
+
+        upButton.removeEventListener(
+            "pointercancel",
+            upHandlers.stop
+        );
+
+        upButton.removeEventListener(
+            "pointerleave",
+            upHandlers.stop
+        );
+
+        downButton.removeEventListener(
+            "pointerdown",
+            downHandlers.start
+        );
+
+        downButton.removeEventListener(
+            "pointerup",
+            downHandlers.stop
+        );
+
+        downButton.removeEventListener(
+            "pointercancel",
+            downHandlers.stop
+        );
+
+        downButton.removeEventListener(
+            "pointerleave",
+            downHandlers.stop
         );
     };
 };

@@ -2,8 +2,14 @@ window.createBreakout = function(root) {
     root.innerHTML = `
         <div class="game-box">
             <div class="game-toolbar">
-                <strong>Счёт: <span class="breakout-score">0</span></strong>
-                <button class="game-button breakout-restart">Заново</button>
+                <strong>
+                    Счёт:
+                    <span class="breakout-score">0</span>
+                </strong>
+
+                <button class="game-button breakout-restart">
+                    Заново
+                </button>
             </div>
 
             <canvas
@@ -15,15 +21,53 @@ window.createBreakout = function(root) {
             <p class="game-status breakout-status">
                 Управление: A / D или ← / →
             </p>
+
+            <div class="mobile-game-controls">
+                <button
+                    class="mobile-game-button breakout-left"
+                    aria-label="Влево"
+                >←</button>
+
+                <button
+                    class="mobile-game-button breakout-right"
+                    aria-label="Вправо"
+                >→</button>
+            </div>
         </div>
     `;
 
-    const canvas = root.querySelector(".breakout-canvas");
-    const ctx = canvas.getContext("2d");
+    const canvas =
+        root.querySelector(
+            ".breakout-canvas"
+        );
 
-    const scoreElement = root.querySelector(".breakout-score");
-    const statusElement = root.querySelector(".breakout-status");
-    const restartButton = root.querySelector(".breakout-restart");
+    const ctx =
+        canvas.getContext("2d");
+
+    const scoreElement =
+        root.querySelector(
+            ".breakout-score"
+        );
+
+    const statusElement =
+        root.querySelector(
+            ".breakout-status"
+        );
+
+    const restartButton =
+        root.querySelector(
+            ".breakout-restart"
+        );
+
+    const leftButton =
+        root.querySelector(
+            ".breakout-left"
+        );
+
+    const rightButton =
+        root.querySelector(
+            ".breakout-right"
+        );
 
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
@@ -70,17 +114,29 @@ window.createBreakout = function(root) {
         const startX =
             (WIDTH - totalWidth) / 2;
 
-        for (let row = 0; row < BRICK_ROWS; row++) {
-            for (let col = 0; col < BRICK_COLS; col++) {
+        for (
+            let row = 0;
+            row < BRICK_ROWS;
+            row++
+        ) {
+            for (
+                let col = 0;
+                col < BRICK_COLS;
+                col++
+            ) {
                 bricks.push({
                     x:
                         startX +
                         col *
-                            (BRICK_WIDTH + BRICK_GAP),
+                            (BRICK_WIDTH +
+                                BRICK_GAP),
+
                     y:
                         45 +
                         row *
-                            (BRICK_HEIGHT + BRICK_GAP),
+                            (BRICK_HEIGHT +
+                                BRICK_GAP),
+
                     width: BRICK_WIDTH,
                     height: BRICK_HEIGHT,
                     alive: true
@@ -91,13 +147,16 @@ window.createBreakout = function(root) {
 
     function reset() {
         if (animationId) {
-            cancelAnimationFrame(animationId);
+            cancelAnimationFrame(
+                animationId
+            );
         }
 
         score = 0;
         running = true;
 
-        scoreElement.textContent = "0";
+        scoreElement.textContent =
+            "0";
 
         statusElement.textContent =
             "Управление: A / D или ← / →";
@@ -108,68 +167,12 @@ window.createBreakout = function(root) {
 
         ball.x = WIDTH / 2;
         ball.y = HEIGHT - 60;
-
         ball.dx = 3.2;
         ball.dy = -3.2;
 
         createBricks();
 
         loop();
-    }
-
-    function draw() {
-        ctx.clearRect(
-            0,
-            0,
-            WIDTH,
-            HEIGHT
-        );
-
-        ctx.fillStyle = "#f7f8f6";
-
-        ctx.fillRect(
-            0,
-            0,
-            WIDTH,
-            HEIGHT
-        );
-
-        ctx.fillStyle = "#222";
-
-        ctx.fillRect(
-            paddle.x,
-            paddle.y,
-            paddle.width,
-            paddle.height
-        );
-
-        bricks.forEach(brick => {
-            if (!brick.alive) return;
-
-            ctx.fillStyle = "#3f8f55";
-
-            ctx.fillRect(
-                brick.x,
-                brick.y,
-                brick.width,
-                brick.height
-            );
-        });
-
-        ctx.beginPath();
-
-        ctx.arc(
-            ball.x,
-            ball.y,
-            ball.radius,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fillStyle = "#222";
-        ctx.fill();
-
-        ctx.closePath();
     }
 
     function updatePaddle() {
@@ -181,17 +184,13 @@ window.createBreakout = function(root) {
             paddle.x += paddle.speed;
         }
 
-        if (paddle.x < 0) {
-            paddle.x = 0;
-        }
-
-        if (
-            paddle.x + paddle.width >
-            WIDTH
-        ) {
-            paddle.x =
-                WIDTH - paddle.width;
-        }
+        paddle.x = Math.max(
+            0,
+            Math.min(
+                WIDTH - paddle.width,
+                paddle.x
+            )
+        );
     }
 
     function updateBall() {
@@ -203,30 +202,24 @@ window.createBreakout = function(root) {
             ball.x + ball.radius >= WIDTH
         ) {
             ball.dx *= -1;
-
-            ball.x = Math.max(
-                ball.radius,
-                Math.min(
-                    WIDTH - ball.radius,
-                    ball.x
-                )
-            );
         }
 
         if (
             ball.y - ball.radius <= 0
         ) {
             ball.dy *= -1;
-            ball.y = ball.radius;
         }
 
         if (
-            ball.y + ball.radius >= paddle.y &&
+            ball.y + ball.radius >=
+                paddle.y &&
             ball.y - ball.radius <=
-                paddle.y + paddle.height &&
+                paddle.y +
+                    paddle.height &&
             ball.x >= paddle.x &&
             ball.x <=
-                paddle.x + paddle.width &&
+                paddle.x +
+                    paddle.width &&
             ball.dy > 0
         ) {
             const hitPosition =
@@ -234,7 +227,8 @@ window.createBreakout = function(root) {
                 paddle.width;
 
             const angle =
-                (hitPosition - 0.5) * 2;
+                (hitPosition - 0.5) *
+                2;
 
             const speed = 4.5;
 
@@ -244,53 +238,66 @@ window.createBreakout = function(root) {
             ball.dy =
                 -Math.sqrt(
                     speed * speed -
-                    ball.dx * ball.dx
+                        ball.dx *
+                            ball.dx
                 );
-
-            ball.y =
-                paddle.y -
-                ball.radius;
         }
 
-        bricks.forEach(brick => {
-            if (!brick.alive) return;
-
-            if (
-                ball.x + ball.radius > brick.x &&
-                ball.x - ball.radius <
-                    brick.x + brick.width &&
-                ball.y + ball.radius > brick.y &&
-                ball.y - ball.radius <
-                    brick.y + brick.height
-            ) {
-                brick.alive = false;
-
-                score++;
-
-                scoreElement.textContent =
-                    score;
-
-                ball.dy *= -1;
+        bricks.forEach(
+            brick => {
+                if (!brick.alive) {
+                    return;
+                }
 
                 if (
-                    bricks.every(
-                        brick =>
-                            !brick.alive
-                    )
+                    ball.x +
+                        ball.radius >
+                        brick.x &&
+                    ball.x -
+                        ball.radius <
+                        brick.x +
+                            brick.width &&
+                    ball.y +
+                        ball.radius >
+                        brick.y &&
+                    ball.y -
+                        ball.radius <
+                        brick.y +
+                            brick.height
                 ) {
-                    running = false;
+                    brick.alive =
+                        false;
 
-                    statusElement.textContent =
-                        "Ты победил! Все блоки разбиты.";
+                    score++;
 
-                    draw();
+                    scoreElement.textContent =
+                        score;
+
+                    ball.dy *= -1;
                 }
             }
-        });
+        );
 
         if (
-            ball.y - ball.radius >
-            HEIGHT
+            bricks.every(
+                brick =>
+                    !brick.alive
+            )
+        ) {
+            running = false;
+
+            statusElement.textContent =
+                "Ты победил! Все блоки разбиты.";
+
+            draw();
+
+            return;
+        }
+
+        if (
+            ball.y -
+                ball.radius >
+                HEIGHT
         ) {
             running = false;
 
@@ -301,13 +308,78 @@ window.createBreakout = function(root) {
         }
     }
 
+    function draw() {
+        ctx.clearRect(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
+        );
+
+        ctx.fillStyle =
+            "#f7f8f6";
+
+        ctx.fillRect(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
+        );
+
+        ctx.fillStyle =
+            "#222";
+
+        ctx.fillRect(
+            paddle.x,
+            paddle.y,
+            paddle.width,
+            paddle.height
+        );
+
+        bricks.forEach(
+            brick => {
+                if (!brick.alive) {
+                    return;
+                }
+
+                ctx.fillStyle =
+                    "#3f8f55";
+
+                ctx.fillRect(
+                    brick.x,
+                    brick.y,
+                    brick.width,
+                    brick.height
+                );
+            }
+        );
+
+        ctx.beginPath();
+
+        ctx.arc(
+            ball.x,
+            ball.y,
+            ball.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            "#222";
+
+        ctx.fill();
+
+        ctx.closePath();
+    }
+
     function keyDown(event) {
         const key =
             event.key.toLowerCase();
 
         if (
             key === "a" ||
-            event.key === "ArrowLeft"
+            event.key ===
+                "ArrowLeft"
         ) {
             keys.left = true;
             event.preventDefault();
@@ -315,7 +387,8 @@ window.createBreakout = function(root) {
 
         if (
             key === "d" ||
-            event.key === "ArrowRight"
+            event.key ===
+                "ArrowRight"
         ) {
             keys.right = true;
             event.preventDefault();
@@ -328,7 +401,8 @@ window.createBreakout = function(root) {
 
         if (
             key === "a" ||
-            event.key === "ArrowLeft"
+            event.key ===
+                "ArrowLeft"
         ) {
             keys.left = false;
             event.preventDefault();
@@ -336,12 +410,87 @@ window.createBreakout = function(root) {
 
         if (
             key === "d" ||
-            event.key === "ArrowRight"
+            event.key ===
+                "ArrowRight"
         ) {
             keys.right = false;
             event.preventDefault();
         }
     }
+
+    function setMobileKey(
+        key,
+        value
+    ) {
+        return event => {
+            event.preventDefault();
+            keys[key] = value;
+        };
+    }
+
+    const leftStart =
+        setMobileKey(
+            "left",
+            true
+        );
+
+    const rightStart =
+        setMobileKey(
+            "right",
+            true
+        );
+
+    const leftEnd =
+        setMobileKey(
+            "left",
+            false
+        );
+
+    const rightEnd =
+        setMobileKey(
+            "right",
+            false
+        );
+
+    leftButton.addEventListener(
+        "pointerdown",
+        leftStart
+    );
+
+    rightButton.addEventListener(
+        "pointerdown",
+        rightStart
+    );
+
+    leftButton.addEventListener(
+        "pointerup",
+        leftEnd
+    );
+
+    leftButton.addEventListener(
+        "pointercancel",
+        leftEnd
+    );
+
+    leftButton.addEventListener(
+        "pointerleave",
+        leftEnd
+    );
+
+    rightButton.addEventListener(
+        "pointerup",
+        rightEnd
+    );
+
+    rightButton.addEventListener(
+        "pointercancel",
+        rightEnd
+    );
+
+    rightButton.addEventListener(
+        "pointerleave",
+        rightEnd
+    );
 
     function loop() {
         if (!running) {
@@ -354,7 +503,9 @@ window.createBreakout = function(root) {
         draw();
 
         animationId =
-            requestAnimationFrame(loop);
+            requestAnimationFrame(
+                loop
+            );
     }
 
     document.addEventListener(
@@ -394,6 +545,46 @@ window.createBreakout = function(root) {
         restartButton.removeEventListener(
             "click",
             reset
+        );
+
+        leftButton.removeEventListener(
+            "pointerdown",
+            leftStart
+        );
+
+        rightButton.removeEventListener(
+            "pointerdown",
+            rightStart
+        );
+
+        leftButton.removeEventListener(
+            "pointerup",
+            leftEnd
+        );
+
+        leftButton.removeEventListener(
+            "pointercancel",
+            leftEnd
+        );
+
+        leftButton.removeEventListener(
+            "pointerleave",
+            leftEnd
+        );
+
+        rightButton.removeEventListener(
+            "pointerup",
+            rightEnd
+        );
+
+        rightButton.removeEventListener(
+            "pointercancel",
+            rightEnd
+        );
+
+        rightButton.removeEventListener(
+            "pointerleave",
+            rightEnd
         );
     };
 };

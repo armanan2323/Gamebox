@@ -1,49 +1,96 @@
 window.createSnake = function(root) {
     root.innerHTML = `
-        <div class="game-box">
+        <div class="game-box snake-wrap">
             <div class="game-toolbar">
-                <strong>Счёт: <span class="snake-score">0</span></strong>
-                <button class="game-button snake-restart">Заново</button>
+                <strong>
+                    Счёт: <span class="snake-score">0</span>
+                </strong>
+
+                <button class="game-button snake-restart">
+                    Заново
+                </button>
             </div>
 
-            <div class="snake-wrap">
-                <canvas class="snake-canvas" width="500" height="500"></canvas>
+            <canvas
+                class="game-canvas snake-canvas"
+                width="400"
+                height="400"
+            ></canvas>
 
+            <p class="game-status snake-status">
+                Управление: стрелки или WASD
+            </p>
+
+            <div class="mobile-controls snake-mobile-controls">
                 <div class="mobile-dpad">
-                    <button data-dir="up">▲</button>
-                    <button data-dir="left">◀</button>
-                    <button data-dir="down">▼</button>
-                    <button data-dir="right">▶</button>
+                    <button
+                        class="mobile-control snake-up"
+                        aria-label="Вверх"
+                    >↑</button>
+
+                    <div class="mobile-dpad-middle">
+                        <button
+                            class="mobile-control snake-left"
+                            aria-label="Влево"
+                        >←</button>
+
+                        <button
+                            class="mobile-control snake-down"
+                            aria-label="Вниз"
+                        >↓</button>
+
+                        <button
+                            class="mobile-control snake-right"
+                            aria-label="Вправо"
+                        >→</button>
+                    </div>
                 </div>
             </div>
-
-            <p class="game-status snake-status">Используй стрелки или свайпы</p>
         </div>
     `;
 
-    const canvas = root.querySelector(".snake-canvas");
-    const ctx = canvas.getContext("2d");
-    const scoreElement = root.querySelector(".snake-score");
-    const status = root.querySelector(".snake-status");
-    const restart = root.querySelector(".snake-restart");
-    const controls = root.querySelectorAll(".mobile-dpad button");
+    const canvas =
+        root.querySelector(".snake-canvas");
 
-    const size = 20;
-    const cell = canvas.width / size;
+    const ctx =
+        canvas.getContext("2d");
+
+    const scoreElement =
+        root.querySelector(".snake-score");
+
+    const statusElement =
+        root.querySelector(".snake-status");
+
+    const restartButton =
+        root.querySelector(".snake-restart");
+
+    const upButton =
+        root.querySelector(".snake-up");
+
+    const downButton =
+        root.querySelector(".snake-down");
+
+    const leftButton =
+        root.querySelector(".snake-left");
+
+    const rightButton =
+        root.querySelector(".snake-right");
+
+    const SIZE = 20;
+    const CELLS = canvas.width / SIZE;
 
     let snake;
     let food;
     let direction;
     let nextDirection;
     let score;
-    let timer;
     let gameOver;
+    let timer = null;
 
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    function start() {
-        clearInterval(timer);
+    function reset() {
+        if (timer) {
+            clearInterval(timer);
+        }
 
         snake = [
             { x: 10, y: 10 },
@@ -51,56 +98,97 @@ window.createSnake = function(root) {
             { x: 8, y: 10 }
         ];
 
-        direction = "right";
-        nextDirection = "right";
+        direction = {
+            x: 1,
+            y: 0
+        };
+
+        nextDirection = {
+            x: 1,
+            y: 0
+        };
+
         score = 0;
         gameOver = false;
 
-        scoreElement.textContent = score;
-        status.textContent = "Используй стрелки или свайпы";
+        scoreElement.textContent = "0";
 
-        placeFood();
+        statusElement.textContent =
+            "Управление: стрелки или WASD";
+
+        createFood();
         draw();
 
-        timer = setInterval(update, 110);
+        timer = setInterval(
+            update,
+            110
+        );
+    }
+
+    function createFood() {
+        do {
+            food = {
+                x: Math.floor(
+                    Math.random() * CELLS
+                ),
+                y: Math.floor(
+                    Math.random() * CELLS
+                )
+            };
+        } while (
+            snake.some(
+                part =>
+                    part.x === food.x &&
+                    part.y === food.y
+            )
+        );
     }
 
     function update() {
         if (gameOver) return;
 
-        direction = nextDirection;
-
-        const head = {
-            x: snake[0].x,
-            y: snake[0].y
+        direction = {
+            ...nextDirection
         };
 
-        if (direction === "up") head.y--;
-        if (direction === "down") head.y++;
-        if (direction === "left") head.x--;
-        if (direction === "right") head.x++;
+        const head = {
+            x: snake[0].x + direction.x,
+            y: snake[0].y + direction.y
+        };
 
-        const hitWall =
+        if (
             head.x < 0 ||
-            head.x >= size ||
+            head.x >= CELLS ||
             head.y < 0 ||
-            head.y >= size;
+            head.y >= CELLS
+        ) {
+            endGame();
+            return;
+        }
 
-        const hitSelf = snake.some(
-            part => part.x === head.x && part.y === head.y
-        );
-
-        if (hitWall || hitSelf) {
-            finish();
+        if (
+            snake.some(
+                part =>
+                    part.x === head.x &&
+                    part.y === head.y
+            )
+        ) {
+            endGame();
             return;
         }
 
         snake.unshift(head);
 
-        if (head.x === food.x && head.y === food.y) {
+        if (
+            head.x === food.x &&
+            head.y === food.y
+        ) {
             score++;
-            scoreElement.textContent = score;
-            placeFood();
+
+            scoreElement.textContent =
+                score;
+
+            createFood();
         } else {
             snake.pop();
         }
@@ -108,129 +196,197 @@ window.createSnake = function(root) {
         draw();
     }
 
-    function placeFood() {
-        do {
-            food = {
-                x: Math.floor(Math.random() * size),
-                y: Math.floor(Math.random() * size)
-            };
-        } while (
-            snake &&
-            snake.some(
-                part => part.x === food.x && part.y === food.y
-            )
-        );
-    }
-
-    function setDirection(newDirection) {
-        const opposite = {
-            up: "down",
-            down: "up",
-            left: "right",
-            right: "left"
-        };
-
-        if (newDirection !== opposite[direction]) {
-            nextDirection = newDirection;
-        }
-    }
-
-    function finish() {
+    function endGame() {
         gameOver = true;
-        clearInterval(timer);
-        status.textContent = "Игра окончена. Нажми «Заново».";
+
+        if (timer) {
+            clearInterval(timer);
+        }
+
+        statusElement.textContent =
+            "Игра окончена. Нажми «Заново».";
+
         draw();
     }
 
     function draw() {
-        ctx.fillStyle = "#161917";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#f7f8f6";
 
-        ctx.fillStyle = "#e7eae6";
         ctx.fillRect(
-            food.x * cell + 4,
-            food.y * cell + 4,
-            cell - 8,
-            cell - 8
+            0,
+            0,
+            canvas.width,
+            canvas.height
         );
 
-        snake.forEach((part, index) => {
-            ctx.fillStyle = index === 0 ? "#ffffff" : "#bfc5bf";
+        ctx.fillStyle = "#3f8f55";
 
-            ctx.fillRect(
-                part.x * cell + 2,
-                part.y * cell + 2,
-                cell - 4,
-                cell - 4
-            );
-        });
+        ctx.fillRect(
+            food.x * SIZE + 3,
+            food.y * SIZE + 3,
+            SIZE - 6,
+            SIZE - 6
+        );
+
+        snake.forEach(
+            (part, index) => {
+                ctx.fillStyle =
+                    index === 0
+                        ? "#286638"
+                        : "#3f8f55";
+
+                ctx.fillRect(
+                    part.x * SIZE + 2,
+                    part.y * SIZE + 2,
+                    SIZE - 4,
+                    SIZE - 4
+                );
+            }
+        );
     }
 
-    function keydown(event) {
-        const directions = {
-            ArrowUp: "up",
-            ArrowDown: "down",
-            ArrowLeft: "left",
-            ArrowRight: "right",
-            KeyW: "up",
-            KeyS: "down",
-            KeyA: "left",
-            KeyD: "right"
+    function setDirection(x, y) {
+        if (
+            direction.x === -x &&
+            direction.y === -y
+        ) {
+            return;
+        }
+
+        nextDirection = {
+            x,
+            y
+        };
+    }
+
+    function keyDown(event) {
+        const key =
+            event.key.toLowerCase();
+
+        if (
+            key === "arrowup" ||
+            key === "w"
+        ) {
+            setDirection(0, -1);
+            event.preventDefault();
+        }
+
+        if (
+            key === "arrowdown" ||
+            key === "s"
+        ) {
+            setDirection(0, 1);
+            event.preventDefault();
+        }
+
+        if (
+            key === "arrowleft" ||
+            key === "a"
+        ) {
+            setDirection(-1, 0);
+            event.preventDefault();
+        }
+
+        if (
+            key === "arrowright" ||
+            key === "d"
+        ) {
+            setDirection(1, 0);
+            event.preventDefault();
+        }
+    }
+
+    function bindButton(
+        button,
+        x,
+        y
+    ) {
+        const handler = event => {
+            event.preventDefault();
+            setDirection(x, y);
         };
 
-        if (directions[event.code]) {
-            event.preventDefault();
-            setDirection(directions[event.code]);
+        button.addEventListener(
+            "pointerdown",
+            handler
+        );
+
+        return handler;
+    }
+
+    const upHandler =
+        bindButton(
+            upButton,
+            0,
+            -1
+        );
+
+    const downHandler =
+        bindButton(
+            downButton,
+            0,
+            1
+        );
+
+    const leftHandler =
+        bindButton(
+            leftButton,
+            -1,
+            0
+        );
+
+    const rightHandler =
+        bindButton(
+            rightButton,
+            1,
+            0
+        );
+
+    document.addEventListener(
+        "keydown",
+        keyDown
+    );
+
+    restartButton.addEventListener(
+        "click",
+        reset
+    );
+
+    reset();
+
+    return function cleanup() {
+        if (timer) {
+            clearInterval(timer);
         }
-    }
 
-    function touchstart(event) {
-        const touch = event.touches[0];
+        document.removeEventListener(
+            "keydown",
+            keyDown
+        );
 
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-    }
+        restartButton.removeEventListener(
+            "click",
+            reset
+        );
 
-    function touchend(event) {
-        const touch = event.changedTouches[0];
+        upButton.removeEventListener(
+            "pointerdown",
+            upHandler
+        );
 
-        const dx = touch.clientX - touchStartX;
-        const dy = touch.clientY - touchStartY;
+        downButton.removeEventListener(
+            "pointerdown",
+            downHandler
+        );
 
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 25) return;
+        leftButton.removeEventListener(
+            "pointerdown",
+            leftHandler
+        );
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-            setDirection(dx > 0 ? "right" : "left");
-        } else {
-            setDirection(dy > 0 ? "down" : "up");
-        }
-    }
-
-    controls.forEach(button => {
-        button.addEventListener("pointerdown", event => {
-            event.preventDefault();
-            setDirection(button.dataset.dir);
-        });
-    });
-
-    restart.addEventListener("click", start);
-
-    document.addEventListener("keydown", keydown);
-
-    canvas.addEventListener("touchstart", touchstart, {
-        passive: true
-    });
-
-    canvas.addEventListener("touchend", touchend, {
-        passive: true
-    });
-
-    start();
-
-    return function() {
-        clearInterval(timer);
-        document.removeEventListener("keydown", keydown);
-        canvas.removeEventListener("touchstart", touchstart);
-        canvas.removeEventListener("touchend", touchend);
+        rightButton.removeEventListener(
+            "pointerdown",
+            rightHandler
+        );
     };
 };
