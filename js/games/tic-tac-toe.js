@@ -1,104 +1,153 @@
-window.createTicTacToe = function (root) {
+window.createTicTacToe = function(root) {
     root.innerHTML = `
         <div class="game-box">
             <div class="game-toolbar">
-                <strong class="ttt-status">Твой ход: X</strong>
-                <button class="game-button ttt-restart">Заново</button>
+                <strong>
+                    Ход:
+                    <span class="ttt-turn">X</span>
+                </strong>
+
+                <button class="game-button ttt-restart">
+                    Заново
+                </button>
             </div>
 
             <div class="mode-switch">
-                <button class="mode-button active" data-mode="ai">
+                <button
+                    class="mode-button active"
+                    data-mode="ai"
+                >
                     Против ИИ
                 </button>
 
-                <button class="mode-button" data-mode="friend">
-                    С другом
+                <button
+                    class="mode-button"
+                    data-mode="two"
+                >
+                    Два игрока
                 </button>
             </div>
 
             <div class="ttt-board"></div>
 
-            <p class="game-status">
-                Ты играешь за X.
+            <p class="game-status ttt-status">
+                Твой ход
             </p>
         </div>
     `;
 
-    const boardElement = root.querySelector(".ttt-board");
-    const status = root.querySelector(".ttt-status");
-    const restart = root.querySelector(".ttt-restart");
-    const modeButtons = root.querySelectorAll(".mode-button");
+    const boardElement =
+        root.querySelector(".ttt-board");
 
-    let board;
-    let gameOver;
-    let mode = "ai";
+    const turnElement =
+        root.querySelector(".ttt-turn");
+
+    const statusElement =
+        root.querySelector(".ttt-status");
+
+    const restartButton =
+        root.querySelector(".ttt-restart");
+
+    const modeButtons =
+        root.querySelectorAll(".mode-button");
+
+    let board = [];
     let currentPlayer = "X";
-    let aiTimer;
+    let gameOver = false;
+    let mode = "ai";
+    let aiTimer = null;
 
-    function start() {
-        clearTimeout(aiTimer);
-
-        board = Array(9).fill("");
-        gameOver = false;
-        currentPlayer = "X";
-
-        updateStatus();
-        render();
-    }
-
-    function updateStatus() {
-        if (gameOver) return;
-
-        if (mode === "ai") {
-            status.textContent =
-                currentPlayer === "X"
-                    ? "Твой ход: X"
-                    : "ИИ думает...";
-        } else {
-            status.textContent = `Ход игрока ${currentPlayer}`;
+    function reset() {
+        if (aiTimer) {
+            clearTimeout(aiTimer);
+            aiTimer = null;
         }
+
+        board = [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+        ];
+
+        currentPlayer = "X";
+        gameOver = false;
+
+        statusElement.textContent =
+            mode === "ai"
+                ? "Твой ход"
+                : "Ход игрока X";
+
+        render();
     }
 
     function render() {
         boardElement.innerHTML = "";
 
-        board.forEach((value, index) => {
-            const button = document.createElement("button");
+        board.forEach(
+            (value, index) => {
+                const cell =
+                    document.createElement(
+                        "button"
+                    );
 
-            button.className = "ttt-cell";
-            button.textContent = value;
+                cell.className =
+                    "ttt-cell";
 
-            button.addEventListener(
-                "click",
-                () => makeMove(index)
-            );
+                cell.textContent =
+                    value;
 
-            boardElement.appendChild(button);
-        });
+                if (value) {
+                    cell.classList.add(
+                        value.toLowerCase()
+                    );
+                }
+
+                cell.addEventListener(
+                    "click",
+                    () => {
+                        makeMove(index);
+                    }
+                );
+
+                boardElement.appendChild(
+                    cell
+                );
+            }
+        );
+
+        turnElement.textContent =
+            currentPlayer;
     }
 
     function makeMove(index) {
+        if (gameOver) return;
+
+        if (board[index] !== "") {
+            return;
+        }
+
         if (
-            gameOver ||
-            board[index] ||
-            (mode === "ai" && currentPlayer === "O")
+            mode === "ai" &&
+            currentPlayer === "O"
         ) {
             return;
         }
 
-        board[index] = currentPlayer;
+        board[index] =
+            currentPlayer;
 
-        if (check(currentPlayer)) {
-            finish(
-                mode === "ai" && currentPlayer === "X"
-                    ? "Ты победил!"
-                    : `Игрок ${currentPlayer} победил!`
-            );
-            return;
-        }
+        render();
 
-        if (board.every(Boolean)) {
-            finish("Ничья.");
+        const result =
+            checkGame();
+
+        if (result) {
             return;
         }
 
@@ -107,99 +156,169 @@ window.createTicTacToe = function (root) {
                 ? "O"
                 : "X";
 
-        updateStatus();
         render();
 
         if (
             mode === "ai" &&
             currentPlayer === "O"
         ) {
+            statusElement.textContent =
+                "ИИ думает...";
+
             aiTimer = setTimeout(
-                computerMove,
-                350
+                aiMove,
+                450
             );
+        } else {
+            statusElement.textContent =
+                `Ход игрока ${currentPlayer}`;
         }
     }
 
-    function computerMove() {
-        if (gameOver || mode !== "ai") return;
+    function aiMove() {
+        aiTimer = null;
 
-        let move = findWinningMove("O");
+        if (gameOver) return;
 
-        if (move === null) {
-            move = findWinningMove("X");
+        const emptyCells =
+            getEmptyCells();
+
+        if (!emptyCells.length) {
+            return;
         }
 
-        if (
-            move === null &&
-            board[4] === ""
-        ) {
-            move = 4;
-        }
+        let move;
 
-        if (move === null) {
-            const corners = [0, 2, 6, 8]
-                .filter(index => board[index] === "");
+        const randomMistake =
+            Math.random() < 0.45;
 
-            if (corners.length) {
-                move = corners[
+        if (randomMistake) {
+            move =
+                emptyCells[
                     Math.floor(
-                        Math.random() * corners.length
+                        Math.random() *
+                        emptyCells.length
                     )
                 ];
-            }
-        }
-
-        if (move === null) {
-            const empty = board
-                .map((value, index) =>
-                    value ? null : index
-                )
-                .filter(index => index !== null);
-
-            move = empty[
-                Math.floor(
-                    Math.random() * empty.length
-                )
-            ];
+        } else {
+            move = findEasyMove();
         }
 
         board[move] = "O";
 
-        if (check("O")) {
-            finish("ИИ победил.");
-            return;
-        }
+        render();
 
-        if (board.every(Boolean)) {
-            finish("Ничья.");
+        const result =
+            checkGame();
+
+        if (result) {
             return;
         }
 
         currentPlayer = "X";
 
-        updateStatus();
+        statusElement.textContent =
+            "Твой ход";
+
         render();
     }
 
-    function findWinningMove(symbol) {
-        for (let i = 0; i < 9; i++) {
-            if (board[i]) continue;
+    function findEasyMove() {
+        const winningMove =
+            findWinningMove("O");
 
-            board[i] = symbol;
-
-            const wins = check(symbol);
-
-            board[i] = "";
-
-            if (wins) return i;
+        if (
+            winningMove !== -1 &&
+            Math.random() < 0.65
+        ) {
+            return winningMove;
         }
 
-        return null;
+        const blockMove =
+            findWinningMove("X");
+
+        if (
+            blockMove !== -1 &&
+            Math.random() < 0.45
+        ) {
+            return blockMove;
+        }
+
+        if (
+            board[4] === "" &&
+            Math.random() < 0.5
+        ) {
+            return 4;
+        }
+
+        const corners = [
+            0,
+            2,
+            6,
+            8
+        ].filter(
+            index =>
+                board[index] === ""
+        );
+
+        if (
+            corners.length &&
+            Math.random() < 0.5
+        ) {
+            return corners[
+                Math.floor(
+                    Math.random() *
+                    corners.length
+                )
+            ];
+        }
+
+        const emptyCells =
+            getEmptyCells();
+
+        return emptyCells[
+            Math.floor(
+                Math.random() *
+                emptyCells.length
+            )
+        ];
     }
 
-    function check(symbol) {
-        const lines = [
+    function findWinningMove(player) {
+        const emptyCells =
+            getEmptyCells();
+
+        for (const index of emptyCells) {
+            board[index] = player;
+
+            const won =
+                hasWinner(player);
+
+            board[index] = "";
+
+            if (won) {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    function getEmptyCells() {
+        return board
+            .map(
+                (value, index) =>
+                    value === ""
+                        ? index
+                        : -1
+            )
+            .filter(
+                index => index !== -1
+            );
+    }
+
+    function hasWinner(player) {
+        const combinations = [
             [0, 1, 2],
             [3, 4, 5],
             [6, 7, 8],
@@ -210,40 +329,98 @@ window.createTicTacToe = function (root) {
             [2, 4, 6]
         ];
 
-        return lines.some(line =>
-            line.every(index =>
-                board[index] === symbol
-            )
+        return combinations.some(
+            combination =>
+                combination.every(
+                    index =>
+                        board[index] ===
+                        player
+                )
         );
     }
 
-    function finish(message) {
-        gameOver = true;
-        clearTimeout(aiTimer);
-        status.textContent = message;
-        render();
+    function checkGame() {
+        if (
+            hasWinner(currentPlayer)
+        ) {
+            gameOver = true;
+
+            statusElement.textContent =
+                mode === "ai"
+                    ? currentPlayer === "X"
+                        ? "Ты победил!"
+                        : "ИИ победил!"
+                    : `Игрок ${currentPlayer} победил!`;
+
+            return true;
+        }
+
+        if (
+            board.every(
+                cell => cell !== ""
+            )
+        ) {
+            gameOver = true;
+
+            statusElement.textContent =
+                "Ничья!";
+
+            return true;
+        }
+
+        return false;
     }
 
-    modeButtons.forEach(button => {
-        button.addEventListener("click", () => {
-            mode = button.dataset.mode;
+    function changeMode(event) {
+        mode =
+            event.currentTarget.dataset.mode;
 
-            modeButtons.forEach(item => {
-                item.classList.toggle(
+        modeButtons.forEach(
+            button => {
+                button.classList.toggle(
                     "active",
-                    item === button
+                    button.dataset.mode ===
+                        mode
                 );
-            });
+            }
+        );
 
-            start();
-        });
-    });
+        reset();
+    }
 
-    restart.addEventListener("click", start);
+    modeButtons.forEach(
+        button => {
+            button.addEventListener(
+                "click",
+                changeMode
+            );
+        }
+    );
 
-    start();
+    restartButton.addEventListener(
+        "click",
+        reset
+    );
+
+    reset();
 
     return function cleanup() {
-        clearTimeout(aiTimer);
+        if (aiTimer) {
+            clearTimeout(aiTimer);
+        }
+
+        modeButtons.forEach(
+            button => {
+                button.removeEventListener(
+                    "click",
+                    changeMode
+                );
+            }
+        );
+
+        restartButton.removeEventListener(
+            "click",
+            reset
+        );
     };
 };

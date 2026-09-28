@@ -1,0 +1,11 @@
+{
+    "name": "GameBox",
+    "short_name": "GameBox",
+    "description": "Коллекция из 17 браузерных игр",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#f7f8f6",
+    "theme_color": "#f7f8f6",
+    "orientation": "portrait"
+}

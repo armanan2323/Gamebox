@@ -1,39 +1,28 @@
-window.createPong = function (root) {
+window.createPong = function(root) {
     root.innerHTML = `
         <div class="game-box">
             <div class="game-toolbar">
                 <strong>
-                    <span class="player-score">0</span>
+                    Игрок:
+                    <span class="pong-player-score">0</span>
                     :
-                    <span class="opponent-score">0</span>
+                    <span class="pong-ai-score">0</span>
+                    ИИ
                 </strong>
 
-                <button class="game-button pong-restart">Заново</button>
+                <button class="game-button pong-restart">
+                    Заново
+                </button>
             </div>
 
-            <div class="mode-switch">
-                <button class="mode-button active" data-mode="ai">Против ИИ</button>
-                <button class="mode-button" data-mode="friend">Вдвоём</button>
-            </div>
-
-            <div class="pong-wrap">
-                <canvas class="pong-canvas" width="700" height="420"></canvas>
-            </div>
-
-            <div class="pong-mobile-controls">
-                <div class="pong-control-group">
-                    <button class="pong-control" data-control="p1-up">▲</button>
-                    <button class="pong-control" data-control="p1-down">▼</button>
-                </div>
-
-                <div class="pong-control-group player-two-controls">
-                    <button class="pong-control" data-control="p2-up">▲</button>
-                    <button class="pong-control" data-control="p2-down">▼</button>
-                </div>
-            </div>
+            <canvas
+                class="game-canvas pong-canvas"
+                width="720"
+                height="420"
+            ></canvas>
 
             <p class="game-status pong-status">
-                Игрок 1: ↑ ↓
+                Управление: W / S или ↑ / ↓
             </p>
         </div>
     `;
@@ -41,216 +30,172 @@ window.createPong = function (root) {
     const canvas = root.querySelector(".pong-canvas");
     const ctx = canvas.getContext("2d");
 
-    const playerScore = root.querySelector(".player-score");
-    const opponentScore = root.querySelector(".opponent-score");
-    const status = root.querySelector(".pong-status");
-    const restart = root.querySelector(".pong-restart");
-    const modeButtons = root.querySelectorAll(".mode-button");
-    const mobileControls = root.querySelectorAll(".pong-control");
-    const playerTwoControls = root.querySelector(".player-two-controls");
+    const playerScoreElement =
+        root.querySelector(
+            ".pong-player-score"
+        );
 
-    const player = {
-        x: 20,
-        y: 165,
-        width: 12,
+    const aiScoreElement =
+        root.querySelector(
+            ".pong-ai-score"
+        );
+
+    const statusElement =
+        root.querySelector(
+            ".pong-status"
+        );
+
+    const restartButton =
+        root.querySelector(
+            ".pong-restart"
+        );
+
+    const WIDTH = canvas.width;
+    const HEIGHT = canvas.height;
+
+    const paddle = {
+        width: 14,
         height: 90,
-        speed: 7
+        speed: 6,
+        x: 25,
+        y: HEIGHT / 2 - 45
     };
 
-    const opponent = {
-        x: 668,
-        y: 165,
-        width: 12,
+    const ai = {
+        width: 14,
         height: 90,
-        speed: 7
+        speed: 2.5,
+        x: WIDTH - 39,
+        y: HEIGHT / 2 - 45
+    };
+
+    const ball = {
+        radius: 9,
+        x: WIDTH / 2,
+        y: HEIGHT / 2,
+        dx: 3.2,
+        dy: 2
     };
 
     const keys = {
-        p1Up: false,
-        p1Down: false,
-        p2Up: false,
-        p2Down: false
+        up: false,
+        down: false
     };
 
-    let ball;
-    let score1;
-    let score2;
-    let animation;
-    let mode = "ai";
-    let gameOver = false;
+    let playerScore = 0;
+    let aiScore = 0;
+    let running = true;
+    let animationId = null;
 
-    function resetBall(direction = 1) {
-        ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 7,
-            vx: 5 * direction,
-            vy: Math.random() * 4 - 2
-        };
+    function resetBall(direction) {
+        ball.x = WIDTH / 2;
+        ball.y = HEIGHT / 2;
+
+        const speed = 3.2;
+
+        ball.dx =
+            direction * speed;
+
+        ball.dy =
+            (Math.random() > 0.5
+                ? 1
+                : -1) * 1.8;
     }
 
     function reset() {
-        cancelAnimationFrame(animation);
-
-        player.y = canvas.height / 2 - player.height / 2;
-        opponent.y = canvas.height / 2 - opponent.height / 2;
-
-        score1 = 0;
-        score2 = 0;
-        gameOver = false;
-
-        playerScore.textContent = "0";
-        opponentScore.textContent = "0";
-
-        resetBall(Math.random() > .5 ? 1 : -1);
-
-        updateStatus();
-        draw();
-
-        animation = requestAnimationFrame(update);
-    }
-
-    function updateStatus() {
-        if (gameOver) return;
-
-        if (mode === "ai") {
-            status.textContent = "Игрок 1: ↑ ↓";
-        } else {
-            status.textContent = "Игрок 1: ↑ ↓ | Игрок 2: W S";
+        if (animationId) {
+            cancelAnimationFrame(
+                animationId
+            );
         }
-    }
 
-    function update() {
-        if (gameOver) return;
+        playerScore = 0;
+        aiScore = 0;
+        running = true;
 
-        if (keys.p1Up) player.y -= player.speed;
-        if (keys.p1Down) player.y += player.speed;
+        playerScoreElement.textContent =
+            "0";
 
-        player.y = clamp(
-            player.y,
-            0,
-            canvas.height - player.height
+        aiScoreElement.textContent =
+            "0";
+
+        paddle.y =
+            HEIGHT / 2 -
+            paddle.height / 2;
+
+        ai.y =
+            HEIGHT / 2 -
+            ai.height / 2;
+
+        resetBall(
+            Math.random() > 0.5
+                ? 1
+                : -1
         );
 
-        if (mode === "friend") {
-            if (keys.p2Up) opponent.y -= opponent.speed;
-            if (keys.p2Down) opponent.y += opponent.speed;
-        } else {
-            const center = opponent.y + opponent.height / 2;
+        statusElement.textContent =
+            "Управление: W / S или ↑ / ↓";
 
-            if (center < ball.y - 10) {
-                opponent.y += opponent.speed;
-            }
-
-            if (center > ball.y + 10) {
-                opponent.y -= opponent.speed;
-            }
-        }
-
-        opponent.y = clamp(
-            opponent.y,
-            0,
-            canvas.height - opponent.height
-        );
-
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-
-        if (
-            ball.y - ball.radius <= 0 ||
-            ball.y + ball.radius >= canvas.height
-        ) {
-            ball.vy *= -1;
-        }
-
-        if (hit(player)) {
-            ball.x = player.x + player.width + ball.radius;
-            ball.vx = Math.abs(ball.vx);
-            changeAngle(player);
-        }
-
-        if (hit(opponent)) {
-            ball.x = opponent.x - ball.radius;
-            ball.vx = -Math.abs(ball.vx);
-            changeAngle(opponent);
-        }
-
-        if (ball.x < -ball.radius) {
-            score2++;
-            opponentScore.textContent = score2;
-            resetBall(1);
-        }
-
-        if (ball.x > canvas.width + ball.radius) {
-            score1++;
-            playerScore.textContent = score1;
-            resetBall(-1);
-        }
-
-        if (score1 >= 5 || score2 >= 5) {
-            gameOver = true;
-
-            status.textContent =
-                score1 >= 5
-                    ? "Игрок 1 победил!"
-                    : mode === "ai"
-                        ? "ИИ победил."
-                        : "Игрок 2 победил.";
-
-            draw();
-            return;
-        }
-
-        draw();
-        animation = requestAnimationFrame(update);
-    }
-
-    function hit(paddle) {
-        return (
-            ball.x - ball.radius < paddle.x + paddle.width &&
-            ball.x + ball.radius > paddle.x &&
-            ball.y - ball.radius < paddle.y + paddle.height &&
-            ball.y + ball.radius > paddle.y
-        );
-    }
-
-    function changeAngle(paddle) {
-        const center = paddle.y + paddle.height / 2;
-        ball.vy = (ball.y - center) * 0.08;
-    }
-
-    function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
+        loop();
     }
 
     function draw() {
-        ctx.fillStyle = "#161917";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
+        );
 
-        ctx.strokeStyle = "#343934";
-        ctx.setLineDash([8, 10]);
+        ctx.fillStyle = "#f7f8f6";
+
+        ctx.fillRect(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
+        );
+
+        ctx.setLineDash([
+            8,
+            12
+        ]);
+
+        ctx.strokeStyle =
+            "#c5cbc3";
+
+        ctx.lineWidth = 2;
 
         ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height);
+
+        ctx.moveTo(
+            WIDTH / 2,
+            0
+        );
+
+        ctx.lineTo(
+            WIDTH / 2,
+            HEIGHT
+        );
+
         ctx.stroke();
 
         ctx.setLineDash([]);
 
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = "#222";
 
         ctx.fillRect(
-            player.x,
-            player.y,
-            player.width,
-            player.height
+            paddle.x,
+            paddle.y,
+            paddle.width,
+            paddle.height
         );
 
         ctx.fillRect(
-            opponent.x,
-            opponent.y,
-            opponent.width,
-            opponent.height
+            ai.x,
+            ai.y,
+            ai.width,
+            ai.height
         );
 
         ctx.beginPath();
@@ -264,97 +209,259 @@ window.createPong = function (root) {
         );
 
         ctx.fill();
+
+        ctx.closePath();
     }
 
-    function keydown(event) {
+    function updatePlayer() {
+        if (keys.up) {
+            paddle.y -= paddle.speed;
+        }
+
+        if (keys.down) {
+            paddle.y += paddle.speed;
+        }
+
+        paddle.y = Math.max(
+            0,
+            Math.min(
+                HEIGHT - paddle.height,
+                paddle.y
+            )
+        );
+    }
+
+    function updateAI() {
+        const aiCenter =
+            ai.y +
+            ai.height / 2;
+
+        const difference =
+            ball.y - aiCenter;
+
+        const deadZone = 25;
+
         if (
-            event.code === "ArrowUp" ||
-            event.code === "ArrowDown" ||
-            event.code === "KeyW" ||
-            event.code === "KeyS"
+            Math.abs(difference) >
+            deadZone
         ) {
+            if (difference > 0) {
+                ai.y += ai.speed;
+            } else {
+                ai.y -= ai.speed;
+            }
+        }
+
+        ai.y = Math.max(
+            0,
+            Math.min(
+                HEIGHT - ai.height,
+                ai.y
+            )
+        );
+    }
+
+    function updateBall() {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        if (
+            ball.y - ball.radius <= 0 ||
+            ball.y + ball.radius >= HEIGHT
+        ) {
+            ball.dy *= -1;
+        }
+
+        if (
+            ball.x - ball.radius <=
+                paddle.x + paddle.width &&
+            ball.x + ball.radius >=
+                paddle.x &&
+            ball.y >= paddle.y &&
+            ball.y <=
+                paddle.y + paddle.height &&
+            ball.dx < 0
+        ) {
+            const relative =
+                (
+                    ball.y -
+                    (
+                        paddle.y +
+                        paddle.height / 2
+                    )
+                ) /
+                (paddle.height / 2);
+
+            ball.dx = 3.2;
+            ball.dy =
+                relative * 2.5;
+        }
+
+        if (
+            ball.x + ball.radius >= ai.x &&
+            ball.x - ball.radius <=
+                ai.x + ai.width &&
+            ball.y >= ai.y &&
+            ball.y <=
+                ai.y + ai.height &&
+            ball.dx > 0
+        ) {
+            const relative =
+                (
+                    ball.y -
+                    (
+                        ai.y +
+                        ai.height / 2
+                    )
+                ) /
+                (ai.height / 2);
+
+            ball.dx = -3.2;
+            ball.dy =
+                relative * 2.5;
+        }
+
+        if (
+            ball.x + ball.radius < 0
+        ) {
+            aiScore++;
+
+            aiScoreElement.textContent =
+                aiScore;
+
+            if (aiScore >= 7) {
+                endGame(
+                    "ИИ победил."
+                );
+                return;
+            }
+
+            resetBall(1);
+        }
+
+        if (
+            ball.x - ball.radius >
+            WIDTH
+        ) {
+            playerScore++;
+
+            playerScoreElement.textContent =
+                playerScore;
+
+            if (playerScore >= 7) {
+                endGame(
+                    "Ты победил!"
+                );
+                return;
+            }
+
+            resetBall(-1);
+        }
+    }
+
+    function endGame(message) {
+        running = false;
+
+        statusElement.textContent =
+            `${message} Нажми «Заново».`;
+
+        draw();
+    }
+
+    function keyDown(event) {
+        const key =
+            event.key.toLowerCase();
+
+        if (
+            key === "w" ||
+            event.key === "ArrowUp"
+        ) {
+            keys.up = true;
             event.preventDefault();
         }
 
-        if (event.code === "ArrowUp") keys.p1Up = true;
-        if (event.code === "ArrowDown") keys.p1Down = true;
-        if (event.code === "KeyW") keys.p2Up = true;
-        if (event.code === "KeyS") keys.p2Down = true;
-    }
-
-    function keyup(event) {
-        if (event.code === "ArrowUp") keys.p1Up = false;
-        if (event.code === "ArrowDown") keys.p1Down = false;
-        if (event.code === "KeyW") keys.p2Up = false;
-        if (event.code === "KeyS") keys.p2Down = false;
-    }
-
-    function setMobileControl(control, pressed) {
-        if (control === "p1-up") keys.p1Up = pressed;
-        if (control === "p1-down") keys.p1Down = pressed;
-        if (control === "p2-up") keys.p2Up = pressed;
-        if (control === "p2-down") keys.p2Down = pressed;
-    }
-
-    function setMode(newMode) {
-        mode = newMode;
-
-        modeButtons.forEach(button => {
-            button.classList.toggle(
-                "active",
-                button.dataset.mode === mode
-            );
-        });
-
-        playerTwoControls.classList.toggle(
-            "hidden-mobile-control",
-            mode === "ai"
-        );
-
-        reset();
-    }
-
-    modeButtons.forEach(button => {
-        button.addEventListener(
-            "click",
-            () => setMode(button.dataset.mode)
-        );
-    });
-
-    restart.addEventListener("click", reset);
-
-    document.addEventListener("keydown", keydown);
-    document.addEventListener("keyup", keyup);
-
-    mobileControls.forEach(button => {
-        const control = button.dataset.control;
-
-        const press = event => {
+        if (
+            key === "s" ||
+            event.key === "ArrowDown"
+        ) {
+            keys.down = true;
             event.preventDefault();
-            setMobileControl(control, true);
-        };
+        }
+    }
 
-        const release = event => {
+    function keyUp(event) {
+        const key =
+            event.key.toLowerCase();
+
+        if (
+            key === "w" ||
+            event.key === "ArrowUp"
+        ) {
+            keys.up = false;
             event.preventDefault();
-            setMobileControl(control, false);
-        };
+        }
 
-        button.addEventListener("pointerdown", press);
-        button.addEventListener("pointerup", release);
-        button.addEventListener("pointercancel", release);
-        button.addEventListener("pointerleave", release);
-    });
+        if (
+            key === "s" ||
+            event.key === "ArrowDown"
+        ) {
+            keys.down = false;
+            event.preventDefault();
+        }
+    }
 
-    setMode("ai");
+    function loop() {
+        if (!running) {
+            draw();
+            return;
+        }
+
+        updatePlayer();
+        updateAI();
+        updateBall();
+        draw();
+
+        animationId =
+            requestAnimationFrame(loop);
+    }
+
+    document.addEventListener(
+        "keydown",
+        keyDown
+    );
+
+    document.addEventListener(
+        "keyup",
+        keyUp
+    );
+
+    restartButton.addEventListener(
+        "click",
+        reset
+    );
+
+    reset();
 
     return function cleanup() {
-        cancelAnimationFrame(animation);
+        if (animationId) {
+            cancelAnimationFrame(
+                animationId
+            );
+        }
 
-        document.removeEventListener("keydown", keydown);
-        document.removeEventListener("keyup", keyup);
+        document.removeEventListener(
+            "keydown",
+            keyDown
+        );
 
-        Object.keys(keys).forEach(key => {
-            keys[key] = false;
-        });
+        document.removeEventListener(
+            "keyup",
+            keyUp
+        );
+
+        restartButton.removeEventListener(
+            "click",
+            reset
+        );
     };
 };

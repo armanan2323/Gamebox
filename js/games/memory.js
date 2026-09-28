@@ -1,4 +1,4 @@
-window.createMemory = function (root) {
+window.createMemory = function(root) {
     root.innerHTML = `
         <div class="game-box">
             <div class="game-toolbar">
@@ -9,25 +9,19 @@ window.createMemory = function (root) {
             <div class="memory-board"></div>
 
             <p class="game-status memory-status">
-                Найди все пары
+                Найди все пары.
             </p>
         </div>
     `;
 
-    const boardElement = root.querySelector(".memory-board");
+    const board = root.querySelector(".memory-board");
     const movesElement = root.querySelector(".memory-moves");
     const status = root.querySelector(".memory-status");
     const restart = root.querySelector(".memory-restart");
 
     const symbols = [
-        "★", "★",
-        "●", "●",
-        "▲", "▲",
-        "■", "■",
-        "◆", "◆",
-        "♥", "♥",
-        "☀", "☀",
-        "✦", "✦"
+        "🍎", "🍌", "🍇", "🍉",
+        "🍓", "🍒", "🥝", "🍍"
     ];
 
     let cards;
@@ -38,7 +32,14 @@ window.createMemory = function (root) {
     let matched;
 
     function start() {
-        cards = [...symbols].sort(() => Math.random() - 0.5);
+        cards = [...symbols, ...symbols]
+            .sort(() => Math.random() - 0.5)
+            .map((symbol, index) => ({
+                id: index,
+                symbol,
+                open: false,
+                matched: false
+            }));
 
         firstCard = null;
         secondCard = null;
@@ -46,90 +47,101 @@ window.createMemory = function (root) {
         moves = 0;
         matched = 0;
 
-        movesElement.textContent = "0";
-        status.textContent = "Найди все пары";
+        movesElement.textContent = moves;
+        status.textContent = "Найди все пары.";
 
         render();
     }
 
-    function render() {
-        boardElement.innerHTML = "";
-
-        cards.forEach((symbol, index) => {
-            const button = document.createElement("button");
-
-            button.className = "memory-card";
-
-            const visible =
-                firstCard === index ||
-                secondCard === index ||
-                cards[index] === null;
-
-            if (visible) {
-                button.classList.add(
-                    cards[index] === null
-                        ? "matched"
-                        : "flipped"
-                );
-            }
-
-            button.innerHTML = `
-                <span class="memory-symbol">
-                    ${visible && symbol ? symbol : "?"}
-                </span>
-            `;
-
-            button.addEventListener("click", () => flip(index));
-
-            boardElement.appendChild(button);
-        });
-    }
-
-    function flip(index) {
+    function flip(card) {
         if (
             locked ||
-            cards[index] === null ||
-            index === firstCard
+            card.open ||
+            card.matched
         ) {
             return;
         }
 
-        if (firstCard === null) {
-            firstCard = index;
+        card.open = true;
+
+        if (!firstCard) {
+            firstCard = card;
             render();
             return;
         }
 
-        secondCard = index;
+        secondCard = card;
         moves++;
+
         movesElement.textContent = moves;
 
         render();
 
-        locked = true;
+        if (firstCard.symbol === secondCard.symbol) {
+            firstCard.matched = true;
+            secondCard.matched = true;
 
-        setTimeout(() => {
-            if (cards[firstCard] === cards[secondCard]) {
-                cards[firstCard] = null;
-                cards[secondCard] = null;
-                matched += 2;
-
-                if (matched === cards.length) {
-                    status.textContent = "Все пары найдены!";
-                }
-            }
+            matched += 2;
 
             firstCard = null;
             secondCard = null;
-            locked = false;
+
+            if (matched === cards.length) {
+                status.textContent =
+                    `Победа! Ходов: ${moves}`;
+            }
 
             render();
-        }, 550);
+        } else {
+            locked = true;
+
+            setTimeout(() => {
+                firstCard.open = false;
+                secondCard.open = false;
+
+                firstCard = null;
+                secondCard = null;
+
+                locked = false;
+
+                render();
+            }, 700);
+        }
+    }
+
+    function render() {
+        board.innerHTML = "";
+
+        cards.forEach(card => {
+            const button = document.createElement("button");
+
+            button.className = "memory-card";
+
+            if (card.open || card.matched) {
+                button.classList.add("open");
+            }
+
+            if (card.matched) {
+                button.classList.add("matched");
+            }
+
+            button.innerHTML = `
+                <span class="memory-symbol">
+                    ${card.open || card.matched ? card.symbol : "?"}
+                </span>
+            `;
+
+            button.addEventListener("click", () => {
+                flip(card);
+            });
+
+            board.appendChild(button);
+        });
     }
 
     restart.addEventListener("click", start);
 
     start();
 
-    return function cleanup() {};
+    return function() {};
 };

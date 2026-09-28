@@ -1,44 +1,38 @@
-window.createMinesweeper = function (root) {
+window.createMinesweeper = function(root) {
     root.innerHTML = `
         <div class="game-box">
             <div class="game-toolbar">
-                <strong>
-                    🚩 <span class="mine-count">10</span>
-                </strong>
-
-                <button class="game-button minesweeper-restart">
-                    Заново
-                </button>
+                <strong>Мин: <span class="mine-count">10</span></strong>
+                <button class="game-button minesweeper-restart">Заново</button>
             </div>
 
             <div class="minesweeper-board"></div>
 
             <p class="game-status minesweeper-status">
-                Нажми на клетку, чтобы открыть.
-                Удерживай для флажка.
+                Нажми на клетку. ПКМ или долгое нажатие - флажок.
             </p>
         </div>
     `;
 
     const boardElement = root.querySelector(".minesweeper-board");
+    const counter = root.querySelector(".mine-count");
     const status = root.querySelector(".minesweeper-status");
     const restart = root.querySelector(".minesweeper-restart");
-    const mineCount = root.querySelector(".mine-count");
 
     const rows = 10;
     const cols = 10;
     const mines = 10;
 
     let board;
-    let gameOver;
     let revealed;
-    let flags;
-
-    const longPressDelay = 450;
-    let longPressTimer = null;
-    let longPressTriggered = false;
+    let flagCount;
+    let gameOver;
+    let longPressTimer;
+    let longPressTriggered;
 
     function start() {
+        clearTimeout(longPressTimer);
+
         board = Array.from(
             { length: rows },
             () =>
@@ -47,23 +41,23 @@ window.createMinesweeper = function (root) {
                     () => ({
                         mine: false,
                         open: false,
-                        flag: false,
+                        flagged: false,
                         number: 0
                     })
                 )
         );
 
-        gameOver = false;
         revealed = 0;
-        flags = 0;
-
-        updateMineCounter();
-
-        status.textContent =
-            "Нажми на клетку, чтобы открыть. Удерживай для флажка.";
+        flagCount = 0;
+        gameOver = false;
 
         placeMines();
         calculateNumbers();
+
+        counter.textContent = mines;
+        status.textContent =
+            "Нажми на клетку. ПКМ или долгое нажатие - флажок.";
+
         render();
     }
 
@@ -112,12 +106,35 @@ window.createMinesweeper = function (root) {
         }
     }
 
+    function updateCounter() {
+        counter.textContent = Math.max(0, mines - flagCount);
+    }
+
+    function toggleFlag(x, y) {
+        if (gameOver) return;
+
+        const cell = board[y][x];
+
+        if (cell.open) return;
+
+        if (!cell.flagged && flagCount >= mines) {
+            return;
+        }
+
+        cell.flagged = !cell.flagged;
+
+        flagCount += cell.flagged ? 1 : -1;
+
+        updateCounter();
+        render();
+    }
+
     function openCell(x, y) {
         if (gameOver) return;
 
         const cell = board[y][x];
 
-        if (cell.open || cell.flag) return;
+        if (cell.open || cell.flagged) return;
 
         if (cell.mine) {
             cell.open = true;
@@ -125,9 +142,7 @@ window.createMinesweeper = function (root) {
 
             revealMines();
 
-            status.textContent =
-                "💥 Ты попался на мине. Нажми «Заново».";
-
+            status.textContent = "Ты попал на мину.";
             render();
             return;
         }
@@ -135,8 +150,20 @@ window.createMinesweeper = function (root) {
         reveal(x, y);
 
         if (revealed >= rows * cols - mines) {
-            win();
-            return;
+            gameOver = true;
+
+            board.forEach(row => {
+                row.forEach(cell => {
+                    if (cell.mine) {
+                        cell.flagged = true;
+                    }
+                });
+            });
+
+            flagCount = mines;
+            updateCounter();
+
+            status.textContent = "Победа!";
         }
 
         render();
@@ -156,8 +183,8 @@ window.createMinesweeper = function (root) {
 
         if (
             cell.open ||
-            cell.mine ||
-            cell.flag
+            cell.flagged ||
+            cell.mine
         ) {
             return;
         }
@@ -176,67 +203,6 @@ window.createMinesweeper = function (root) {
         }
     }
 
-    function toggleFlag(x, y) {
-        if (gameOver) return;
-
-        const cell = board[y][x];
-
-        if (cell.open) return;
-
-        if (!cell.flag && flags >= mines) {
-            status.textContent =
-                "Все флажки уже использованы.";
-
-            return;
-        }
-
-        cell.flag = !cell.flag;
-
-        flags += cell.flag ? 1 : -1;
-
-        updateMineCounter();
-        render();
-
-        if (flags === mines) {
-            checkFlagWin();
-        }
-    }
-
-    function checkFlagWin() {
-        const correct =
-            board.every(row =>
-                row.every(cell =>
-                    cell.mine === cell.flag
-                )
-            );
-
-        if (correct) {
-            win();
-        }
-    }
-
-    function win() {
-        gameOver = true;
-
-        board.forEach(row => {
-            row.forEach(cell => {
-                if (cell.mine) {
-                    cell.flag = true;
-                }
-
-                cell.open = true;
-            });
-        });
-
-        flags = mines;
-        updateMineCounter();
-
-        status.textContent =
-            "🎉 Победа! Все мины найдены.";
-
-        render();
-    }
-
     function revealMines() {
         board.forEach(row => {
             row.forEach(cell => {
@@ -247,21 +213,17 @@ window.createMinesweeper = function (root) {
         });
     }
 
-    function updateMineCounter() {
-        mineCount.textContent =
-            Math.max(0, mines - flags);
-    }
-
     function render() {
         boardElement.innerHTML = "";
 
         boardElement.style.gridTemplateColumns =
             `repeat(${cols}, 1fr)`;
 
-        board.forEach((row, y) => {
-            row.forEach((cell, x) => {
-                const button =
-                    document.createElement("button");
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const cell = board[y][x];
+
+                const button = document.createElement("button");
 
                 button.className = "mine-cell";
 
@@ -271,92 +233,65 @@ window.createMinesweeper = function (root) {
                     if (cell.mine) {
                         button.classList.add("mine");
                         button.textContent = "💣";
-                    } else if (cell.number) {
-                        button.textContent =
-                            cell.number;
+                    } else if (cell.number > 0) {
+                        button.textContent = cell.number;
                     }
-                } else if (cell.flag) {
+                } else if (cell.flagged) {
+                    button.classList.add("flagged");
                     button.textContent = "🚩";
                 }
 
-                button.addEventListener(
-                    "click",
-                    event => {
-                        if (longPressTriggered) {
-                            longPressTriggered = false;
-                            return;
-                        }
+                button.addEventListener("contextmenu", event => {
+                    event.preventDefault();
+                    toggleFlag(x, y);
+                });
 
-                        openCell(x, y);
-                    }
-                );
-
-                button.addEventListener(
-                    "contextmenu",
-                    event => {
-                        event.preventDefault();
-                        toggleFlag(x, y);
-                    }
-                );
-
-                button.addEventListener(
-                    "pointerdown",
-                    event => {
-                        if (
-                            event.pointerType !== "touch"
-                        ) {
-                            return;
-                        }
-
+                button.addEventListener("click", () => {
+                    if (longPressTriggered) {
                         longPressTriggered = false;
-
-                        longPressTimer =
-                            setTimeout(() => {
-                                longPressTriggered = true;
-                                toggleFlag(x, y);
-                            }, longPressDelay);
+                        return;
                     }
-                );
 
-                button.addEventListener(
-                    "pointerup",
-                    event => {
-                        if (
-                            event.pointerType === "touch"
-                        ) {
-                            clearTimeout(longPressTimer);
-                        }
+                    openCell(x, y);
+                });
+
+                button.addEventListener("pointerdown", event => {
+                    if (event.pointerType !== "touch") {
+                        return;
                     }
-                );
 
-                button.addEventListener(
-                    "pointercancel",
-                    () => {
+                    longPressTriggered = false;
+
+                    clearTimeout(longPressTimer);
+
+                    longPressTimer = setTimeout(() => {
+                        longPressTriggered = true;
+                        toggleFlag(x, y);
+                    }, 500);
+                });
+
+                button.addEventListener("pointerup", event => {
+                    if (event.pointerType === "touch") {
                         clearTimeout(longPressTimer);
                     }
-                );
+                });
 
-                button.addEventListener(
-                    "pointerleave",
-                    event => {
-                        if (
-                            event.pointerType === "touch"
-                        ) {
-                            clearTimeout(longPressTimer);
-                        }
+                button.addEventListener("pointercancel", event => {
+                    if (event.pointerType === "touch") {
+                        clearTimeout(longPressTimer);
                     }
-                );
+                });
 
                 boardElement.appendChild(button);
-            });
-        });
+            }
+        }
     }
 
     restart.addEventListener("click", start);
 
     start();
 
-    return function cleanup() {
+    return function() {
         clearTimeout(longPressTimer);
     };
 };

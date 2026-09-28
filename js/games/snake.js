@@ -1,4 +1,4 @@
-window.createSnake = function (root) {
+window.createSnake = function(root) {
     root.innerHTML = `
         <div class="game-box">
             <div class="game-toolbar">
@@ -10,16 +10,14 @@ window.createSnake = function (root) {
                 <canvas class="snake-canvas" width="500" height="500"></canvas>
 
                 <div class="mobile-dpad">
-                    <button class="dpad-up" data-dir="up">▲</button>
-                    <button class="dpad-left" data-dir="left">◀</button>
-                    <button class="dpad-down" data-dir="down">▼</button>
-                    <button class="dpad-right" data-dir="right">▶</button>
+                    <button data-dir="up">▲</button>
+                    <button data-dir="left">◀</button>
+                    <button data-dir="down">▼</button>
+                    <button data-dir="right">▶</button>
                 </div>
             </div>
 
-            <p class="game-status snake-status">
-                Используй стрелки или свайпы
-            </p>
+            <p class="game-status snake-status">Используй стрелки или свайпы</p>
         </div>
     `;
 
@@ -40,6 +38,7 @@ window.createSnake = function (root) {
     let score;
     let timer;
     let gameOver;
+
     let touchStartX = 0;
     let touchStartY = 0;
 
@@ -81,13 +80,17 @@ window.createSnake = function (root) {
         if (direction === "left") head.x--;
         if (direction === "right") head.x++;
 
-        if (
+        const hitWall =
             head.x < 0 ||
             head.x >= size ||
             head.y < 0 ||
-            head.y >= size ||
-            snake.some(part => part.x === head.x && part.y === head.y)
-        ) {
+            head.y >= size;
+
+        const hitSelf = snake.some(
+            part => part.x === head.x && part.y === head.y
+        );
+
+        if (hitWall || hitSelf) {
             finish();
             return;
         }
@@ -113,7 +116,9 @@ window.createSnake = function (root) {
             };
         } while (
             snake &&
-            snake.some(part => part.x === food.x && part.y === food.y)
+            snake.some(
+                part => part.x === food.x && part.y === food.y
+            )
         );
     }
 
@@ -151,6 +156,7 @@ window.createSnake = function (root) {
 
         snake.forEach((part, index) => {
             ctx.fillStyle = index === 0 ? "#ffffff" : "#bfc5bf";
+
             ctx.fillRect(
                 part.x * cell + 2,
                 part.y * cell + 2,
@@ -180,6 +186,7 @@ window.createSnake = function (root) {
 
     function touchstart(event) {
         const touch = event.touches[0];
+
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
     }
@@ -209,12 +216,18 @@ window.createSnake = function (root) {
     restart.addEventListener("click", start);
 
     document.addEventListener("keydown", keydown);
-    canvas.addEventListener("touchstart", touchstart, { passive: true });
-    canvas.addEventListener("touchend", touchend, { passive: true });
+
+    canvas.addEventListener("touchstart", touchstart, {
+        passive: true
+    });
+
+    canvas.addEventListener("touchend", touchend, {
+        passive: true
+    });
 
     start();
 
-    return function cleanup() {
+    return function() {
         clearInterval(timer);
         document.removeEventListener("keydown", keydown);
         canvas.removeEventListener("touchstart", touchstart);
