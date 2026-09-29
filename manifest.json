@@ -1,7 +1,7 @@
 {
     "name": "GameBox",
     "short_name": "GameBox",
-    "description": "Коллекция из 21 браузерных игр",
+    "description": "Коллекция из 23 браузерных игр",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",

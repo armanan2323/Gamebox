@@ -186,7 +186,25 @@ quickMath: {
         category: "Аркады",
         group: "arcade",
         create: "createDoodleJump"
-    }
+    },
+
+    billiards: {
+    title: "Billiards",
+    icon: "🎱",
+    desc: "Бильярд для двух игроков",
+    category: "Два игрока",
+    group: "twoPlayer",
+    create: "createBilliards"
+    },
+
+    airHockey: {
+    title: "Air Hockey",
+    icon: "🏒",
+    desc: "Аэрохоккей против ИИ или друга",
+    category: "Два игрока",
+    group: "twoPlayer",
+    create: "createAirHockey"
+},
 };
 
 const homeView = document.getElementById("homeView");
@@ -258,7 +276,14 @@ function openGame(id) {
     const createGame = window[game.create];
 
     if (typeof createGame === "function") {
-        currentGameCleanup = createGame(gameRoot);
+        currentGameCleanup = createGame(gameRoot) || null;
+    } else {
+        gameRoot.innerHTML = `
+            <div class="game-box game-error">
+                <strong>Игра не загрузилась</strong>
+                <p>Проверьте подключение файла игры или обновите страницу.</p>
+            </div>
+        `;
     }
 
     window.scrollTo({

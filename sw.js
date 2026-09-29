@@ -1,37 +1,35 @@
-const CACHE_NAME = "gamebox-v1";
+const CACHE_NAME = "gamebox-v3";
 
 const FILES = [
     "./",
     "./index.html",
     "./manifest.json",
-
     "./css/style.css",
     "./css/games.css",
-
     "./js/app.js",
-
-    "./js/games/snake.js",
-    "./js/games/tetris.js",
-    "./js/games/minesweeper.js",
-    "./js/games/pong.js",
-    "./js/games/memory.js",
-    "./js/games/tic-tac-toe.js",
-
     "./js/games/2048.js",
-    "./js/games/breakout.js",
-    "./js/games/flappy-bird.js",
-    "./js/games/connect-four.js",
-    "./js/games/sudoku.js",
-    "./js/games/space-invaders.js",
-    "./js/games/chess.js",
+    "./js/games/air-hockey.js",
     "./js/games/battleship.js",
-    "./js/games/puzzle-15.js",
-    "./js/games/reaction.js",
-    "./js/games/doodle-jump.js",
+    "./js/games/billiards.js",
+    "./js/games/breakout.js",
     "./js/games/car-dodge.js",
+    "./js/games/chess.js",
+    "./js/games/connect-four.js",
+    "./js/games/doodle-jump.js",
+    "./js/games/flappy-bird.js",
+    "./js/games/memory.js",
+    "./js/games/minesweeper.js",
     "./js/games/pacman.js",
+    "./js/games/pong.js",
+    "./js/games/puzzle-15.js",
     "./js/games/quick-math.js",
-    "./js/games/reaction-battle.js"
+    "./js/games/reaction-battle.js",
+    "./js/games/reaction.js",
+    "./js/games/snake.js",
+    "./js/games/space-invaders.js",
+    "./js/games/sudoku.js",
+    "./js/games/tetris.js",
+    "./js/games/tic-tac-toe.js",
 ];
 
 self.addEventListener("install", event => {

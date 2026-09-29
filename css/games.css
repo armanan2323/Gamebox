@@ -28,7 +28,6 @@
     background: #f5f7f4;
     color: #303530;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .game-button:hover {
@@ -51,13 +50,12 @@
 
 .game-canvas {
     display: block;
-    width: min(100%, 720px);
+    width: min(720px, 100%);
     height: auto;
     margin: 0 auto;
     border: 1px solid #dfe3dd;
     border-radius: 10px;
     background: #000;
-    image-rendering: auto;
     touch-action: none;
 }
 
@@ -74,7 +72,6 @@
     background: #f7f8f6;
     color: #687068;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .mode-button.active {
@@ -87,7 +84,7 @@
     display: none;
     justify-content: center;
     gap: 10px;
-    margin-top: 14px;
+    margin: 14px auto 0;
 }
 
 .mobile-controls button {
@@ -127,16 +124,12 @@
     background: #111;
     color: #fff;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 20px;
     touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-dpad button:active {
     background: #3f8f55;
-    border-color: #3f8f55;
 }
 
 .dpad-up {
@@ -153,6 +146,67 @@
 
 .dpad-right {
     grid-column: 3;
+}
+
+.mobile-game-controls {
+    display: none;
+    width: 100%;
+    max-width: 420px;
+    margin: 18px auto 0;
+    gap: 12px;
+}
+
+.mobile-game-button {
+    flex: 1;
+    min-height: 64px;
+    border: 1px solid #333;
+    border-radius: 14px;
+    background: #111;
+    color: #fff;
+    font-size: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-game-button:active {
+    background: #3f8f55;
+    border-color: #3f8f55;
+}
+
+.mobile-dpad,
+.snake-mobile-controls {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.mobile-control {
+    width: 68px;
+    height: 58px;
+    border: 1px solid #333;
+    border-radius: 14px;
+    background: #111;
+    color: #fff;
+    font-size: 27px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-control:active {
+    background: #3f8f55;
+    border-color: #3f8f55;
+}
+
+.mobile-dpad-middle {
+    display: flex;
+    gap: 8px;
 }
 
 .snake-wrap {
@@ -187,8 +241,7 @@
     height: auto;
     margin: 0 auto;
     border-radius: 10px;
-    background: #000;
-    touch-action: none;
+    background: #111;
 }
 
 .tetris-side {
@@ -222,7 +275,6 @@
     border-radius: 7px;
     background: #f3f5f2;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .tetris-controls .tetris-left {
@@ -268,15 +320,15 @@
 }
 
 .pong-control-group button {
-    min-width: 58px;
-    min-height: 50px;
+    min-width: 64px;
+    min-height: 52px;
     border: 1px solid #333;
     border-radius: 10px;
     background: #111;
     color: #fff;
+    font-size: 20px;
     cursor: pointer;
     touch-action: none;
-    user-select: none;
 }
 
 .pong-control-group button:active {
@@ -303,7 +355,6 @@
     color: #263026;
     cursor: pointer;
     font-size: clamp(22px, 5vw, 34px);
-    touch-action: manipulation;
 }
 
 .memory-card.open,
@@ -335,7 +386,6 @@
     color: #202420;
     font-size: clamp(36px, 9vw, 64px);
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .ttt-cell:hover {
@@ -360,12 +410,10 @@
     font-size: clamp(11px, 2.5vw, 17px);
     font-weight: 700;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .mine-cell.open {
     background: #fff;
-    border-color: #e0e3de;
 }
 
 .mine-cell.mine {
@@ -386,7 +434,6 @@
     gap: 8px;
     border-radius: 10px;
     background: #dfe4dd;
-    touch-action: none;
 }
 
 .tile-2048 {
@@ -442,7 +489,7 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 7px;
     border-radius: 12px;
-    background: #dfe4dd;
+    background: #20252b;
 }
 
 .connect-four-cell {
@@ -450,10 +497,9 @@
     padding: 0;
     border: 0;
     border-radius: 50%;
-    background: #f7f8f6;
-    box-shadow: inset 0 0 0 2px #c5cbc3;
+    background: #050505;
+    box-shadow: inset 0 0 0 2px #333;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .connect-four-cell.red {
@@ -485,7 +531,6 @@
     color: #293129;
     font-size: clamp(14px, 3vw, 23px);
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .sudoku-cell.border-right {
@@ -513,17 +558,15 @@
 }
 
 .number-pad button {
-    min-height: 48px;
+    min-height: 42px;
     border: 1px solid #d8ddd6;
     border-radius: 8px;
     background: #f4f6f3;
     color: #303530;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
-.chess-board,
-.checkers-board {
+.chess-board {
     width: min(560px, 100%);
     margin: 0 auto;
     display: grid;
@@ -531,8 +574,7 @@
     border: 2px solid #666f66;
 }
 
-.chess-cell,
-.checkers-cell {
+.chess-cell {
     position: relative;
     aspect-ratio: 1;
     padding: 0;
@@ -540,46 +582,16 @@
     background: #e9ede7;
     color: #252a25;
     cursor: pointer;
-    touch-action: manipulation;
-}
-
-.chess-cell.dark,
-.checkers-cell.dark {
-    background: #9ca79a;
-}
-
-.chess-cell.selected,
-.checkers-cell.selected {
-    box-shadow: inset 0 0 0 4px #596659;
-}
-
-.chess-cell {
     font-size: clamp(27px, 7vw, 52px);
     line-height: 1;
 }
 
-.checker {
-    position: absolute;
-    width: 68%;
-    height: 68%;
-    top: 16%;
-    left: 16%;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid rgba(0, 0, 0, .15);
-    font-size: clamp(16px, 4vw, 30px);
+.chess-cell.dark {
+    background: #9ca79a;
 }
 
-.checker.black {
-    background: #303530;
-    color: #fff;
-}
-
-.checker.white {
-    background: #f7f8f6;
-    color: #303530;
+.chess-cell.selected {
+    box-shadow: inset 0 0 0 4px #596659;
 }
 
 .battleship-info {
@@ -588,9 +600,10 @@
     gap: 12px;
     margin-bottom: 16px;
     padding: 10px 12px;
-    border: 1px solid #e0e3de;
+    border: 1px solid #333;
     border-radius: 8px;
-    background: #f7f8f6;
+    background: #080808;
+    color: #fff;
 }
 
 .battleship-player {
@@ -598,7 +611,7 @@
 }
 
 .battleship-phase {
-    color: #707770;
+    color: #aaa;
 }
 
 .battleship-ships {
@@ -611,11 +624,11 @@
 .battleship-ship-button,
 .battleship-rotate {
     padding: 9px 12px;
-    border: 1px solid #d8ddd6;
+    border: 1px solid #333;
     border-radius: 8px;
-    background: #f5f7f4;
+    background: #111;
+    color: #fff;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .battleship-ship-button {
@@ -625,13 +638,13 @@
 }
 
 .battleship-ship-button span {
-    color: #737a73;
+    color: #aaa;
     font-size: 12px;
 }
 
 .battleship-ship-button.selected {
-    border-color: #657565;
-    background: #eaf0e8;
+    border-color: #fff;
+    background: #222;
 }
 
 .battleship-ship-button.placed {
@@ -655,23 +668,22 @@
 .battle-cell {
     aspect-ratio: 1;
     padding: 0;
-    border: 1px solid #cfd6cd;
+    border: 1px solid #333;
     border-radius: 5px;
-    background: #dce8f2;
+    background: #101820;
     color: #fff;
     font-size: clamp(14px, 3vw, 22px);
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .battle-cell.player-red {
-    background: #e35d5b;
-    border-color: #c93f3d;
+    background: #d94a46;
+    border-color: #a92d2a;
 }
 
 .battle-cell.player-blue {
-    background: #4d8ed8;
-    border-color: #326fb9;
+    background: #377cc5;
+    border-color: #245b94;
 }
 
 .battle-cell.hit {
@@ -680,8 +692,8 @@
 }
 
 .battle-cell.miss {
-    background: #eef2f5;
-    color: #68747e;
+    background: #222;
+    color: #888;
 }
 
 .battleship-target-wrap {
@@ -704,9 +716,10 @@
 .battleship-cover-box {
     width: min(420px, 100%);
     padding: 30px;
-    border: 1px solid #e0e3de;
+    border: 1px solid #333;
     border-radius: 14px;
-    background: #f7f8f6;
+    background: #080808;
+    color: #fff;
     text-align: center;
 }
 
@@ -717,11 +730,7 @@
 
 .battleship-cover-box p {
     margin: 12px 0 20px;
-    color: #707770;
-}
-
-.battleship-cover-box .game-button {
-    margin: 0 auto;
+    color: #aaa;
 }
 
 .puzzle15-board {
@@ -744,7 +753,6 @@
     font-size: clamp(20px, 6vw, 34px);
     font-weight: 700;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .puzzle15-cell:hover {
@@ -758,9 +766,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #dfe3dd;
+    border: 1px solid #333;
     border-radius: 12px;
-    background: #eef1ec;
+    background: #080808;
 }
 
 .reaction-target {
@@ -768,81 +776,15 @@
     aspect-ratio: 1;
     border: 0;
     border-radius: 50%;
-    background: #7d877c;
+    background: #333;
     color: #fff;
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .reaction-target.ready {
-    background: #435743;
-}
-
-.breakout-canvas,
-.flappy-canvas,
-.space-canvas,
-.doodle-canvas {
-    display: block;
-    width: min(100%, 720px);
-    height: auto;
-    margin: 0 auto;
-    border-radius: 10px;
-    background: #000;
-    touch-action: none;
-}
-
-.snake-game,
-.pacman-game,
-.reaction-game,
-.quick-math-game {
-    background: #000;
-    color: #fff;
-}
-
-.snake-game .game-toolbar,
-.pacman-game .game-toolbar,
-.reaction-game .game-toolbar,
-.quick-math-game .game-toolbar {
-    color: #fff;
-}
-
-.snake-status,
-.pacman-status,
-.car-status,
-.reaction-status,
-.math-status {
-    color: #aaa;
-}
-
-.mobile-game-controls {
-    display: none;
-    width: 100%;
-    max-width: 420px;
-    margin: 18px auto 0;
-    gap: 12px;
-}
-
-.mobile-game-button {
-    flex: 1;
-    min-height: 64px;
-    border: 1px solid #333;
-    border-radius: 14px;
-    background: #111;
-    color: #fff;
-    font-size: 30px;
-    font-weight: 600;
-    cursor: pointer;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-game-button:active {
     background: #3f8f55;
-    border-color: #3f8f55;
 }
 
 .reaction-arena {
@@ -864,6 +806,7 @@
     border: 1px solid #333;
     border-radius: 16px;
     background: #080808;
+    color: #fff;
 }
 
 .reaction-player-one {
@@ -886,9 +829,7 @@
     font-size: 20px;
     font-weight: 700;
     cursor: pointer;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
+    touch-action: manipulation;
 }
 
 .reaction-button-one {
@@ -914,6 +855,7 @@
     justify-content: center;
     gap: 12px;
     text-align: center;
+    color: #fff;
 }
 
 .reaction-message {
@@ -958,7 +900,6 @@
     font-size: 25px;
     font-weight: 600;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .math-answer:hover {
@@ -971,6 +912,195 @@
 
 .math-answer:disabled {
     opacity: .45;
+}
+
+.breakout-canvas,
+.flappy-canvas,
+.space-canvas,
+.doodle-canvas,
+.pacman-canvas,
+.car-dodge-canvas {
+    display: block;
+    width: min(720px, 100%);
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 10px;
+    background: #000;
+    touch-action: none;
+}
+
+.snake-game,
+.pacman-game,
+.reaction-game,
+.quick-math-game,
+.car-dodge-game,
+.breakout-game,
+.flappy-game,
+.space-invaders-game,
+.doodle-jump-game {
+    background: #000;
+    color: #fff;
+}
+
+.snake-game .game-toolbar,
+.pacman-game .game-toolbar,
+.reaction-game .game-toolbar,
+.quick-math-game .game-toolbar,
+.car-dodge-game .game-toolbar,
+.breakout-game .game-toolbar,
+.flappy-game .game-toolbar,
+.space-invaders-game .game-toolbar,
+.doodle-jump-game .game-toolbar {
+    color: #fff;
+}
+
+.snake-game .game-toolbar strong,
+.pacman-game .game-toolbar strong,
+.reaction-game .game-toolbar strong,
+.quick-math-game .game-toolbar strong,
+.car-dodge-game .game-toolbar strong,
+.breakout-game .game-toolbar strong,
+.flappy-game .game-toolbar strong,
+.space-invaders-game .game-toolbar strong,
+.doodle-jump-game .game-toolbar strong {
+    color: #fff;
+}
+
+.snake-status,
+.pacman-status,
+.car-status,
+.reaction-status,
+.math-status {
+    color: #aaa;
+}
+
+.billiards-game {
+    background: #000;
+    color: #fff;
+}
+
+.billiards-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    max-width: 900px;
+    margin: 0 auto 12px;
+    padding: 10px 14px;
+    border: 1px solid #252525;
+    border-radius: 10px;
+    background: #080808;
+}
+
+.billiards-turn {
+    color: #fff;
+    font-weight: 600;
+}
+
+.billiards-score {
+    color: #aaa;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.billiards-canvas {
+    display: block;
+    width: min(900px, 100%);
+    height: auto;
+    margin: 0 auto;
+    border-radius: 12px;
+    background: #000;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.billiards-power {
+    width: min(500px, 100%);
+    margin: 15px auto 0;
+    color: #999;
+    font-size: 13px;
+}
+
+.billiards-power-bar {
+    height: 9px;
+    margin-top: 7px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #191919;
+}
+
+.billiards-power-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: #fff;
+    transition: width .05s linear;
+}
+
+.billiards-status {
+    color: #999;
+}
+
+.air-hockey-game {
+    background: #000;
+    color: #fff;
+}
+
+.hockey-score {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 25px;
+    margin: 5px 0 12px;
+    font-size: 34px;
+    font-weight: 800;
+}
+
+.hockey-blue-score {
+    color: #4b8ff0;
+}
+
+.hockey-red-score {
+    color: #e34b4b;
+}
+
+.air-hockey-canvas {
+    display: block;
+    width: min(800px, 100%);
+    height: auto;
+    margin: 0 auto;
+    border-radius: 14px;
+    background: #000;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.hockey-status {
+    color: #999;
+}
+
+.billiards-game .game-button,
+.air-hockey-game .game-button,
+.billiards-game .mode-button,
+.air-hockey-game .mode-button {
+    border-color: #333;
+    background: #111;
+    color: #fff;
+}
+
+.billiards-game .game-button:hover,
+.air-hockey-game .game-button:hover {
+    background: #1a1a1a;
+}
+
+.billiards-game .mode-button.active,
+.air-hockey-game .mode-button.active {
+    border-color: #555;
+    background: #222;
+    color: #fff;
 }
 
 @media (max-width: 700px) {
@@ -988,18 +1118,6 @@
         font-size: 13px;
     }
 
-    .mobile-game-controls {
-        display: flex;
-    }
-
-    .mobile-controls {
-        display: flex;
-    }
-
-    .snake-mobile-controls {
-        display: block;
-    }
-
     .tetris-layout {
         grid-template-columns: 1fr;
     }
@@ -1012,6 +1130,16 @@
     .tetris-next {
         width: 100px;
         height: 100px;
+    }
+
+    .mobile-controls,
+    .mobile-game-controls,
+    .snake-mobile-controls {
+        display: flex;
+    }
+
+    .snake-mobile-controls {
+        display: block;
     }
 
     .reaction-area {
@@ -1048,35 +1176,29 @@
         font-size: 30px;
     }
 
-    .math-answers {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .math-answer {
         min-height: 64px;
     }
 
-    .battleship-info {
-        flex-direction: column;
-        gap: 5px;
+    .billiards-info {
+        padding: 9px 10px;
+        font-size: 13px;
     }
 
-    .battleship-board,
-    .battleship-target-board {
-        gap: 3px;
+    .billiards-score {
+        font-size: 16px;
     }
 
-    .game-canvas,
-    .snake-canvas,
-    .pacman-canvas,
-    .car-dodge-canvas,
-    .breakout-canvas,
-    .pong-canvas,
-    .flappy-canvas,
-    .space-canvas,
-    .doodle-canvas {
+    .billiards-canvas,
+    .air-hockey-canvas {
         width: 100%;
-        height: auto;
+        max-width: 100%;
+    }
+
+    .hockey-score {
+        gap: 18px;
+        margin-bottom: 8px;
+        font-size: 29px;
     }
 }
 
@@ -1097,25 +1219,6 @@
     .game-button {
         padding: 8px 10px;
         font-size: 13px;
-    }
-
-    .mobile-game-button {
-        min-height: 60px;
-        font-size: 27px;
-    }
-
-    .mobile-controls {
-        gap: 7px;
-    }
-
-    .mobile-controls button {
-        min-width: 52px;
-        min-height: 52px;
-    }
-
-    .mobile-control {
-        width: 62px;
-        height: 54px;
     }
 
     .memory-board {
@@ -1140,52 +1243,67 @@
         width: 170px;
     }
 
-    .reaction-arena {
+    .mobile-game-controls {
+        gap: 7px;
+    }
+
+    .mobile-game-button {
+        min-height: 60px;
+    }
+
+    .mobile-controls {
+        gap: 7px;
+    }
+
+    .mobile-controls button {
+        min-width: 52px;
+        min-height: 48px;
+    }
+
+    .pong-mobile-controls {
+        gap: 8px;
+    }
+
+    .pong-control-group {
         gap: 5px;
     }
 
-    .reaction-player {
-        min-height: 170px;
+    .pong-control-group button {
+        min-width: 56px;
+        min-height: 48px;
     }
 
-    .reaction-button {
-        width: 90px;
-        height: 62px;
-        font-size: 14px;
-    }
-
-    .reaction-player strong {
-        font-size: 28px;
-    }
-
-    .reaction-center {
-        width: 55px;
-    }
-
-    .reaction-message {
+    .billiards-info {
         font-size: 12px;
     }
 
-    .reaction-timer {
-        font-size: 24px;
+    .billiards-power {
+        margin-top: 10px;
+    }
+
+    .billiards-status,
+    .hockey-status {
+        font-size: 12px;
+    }
+
+    .air-hockey-canvas {
+        border-radius: 10px;
+    }
+
+    .math-answers {
+        gap: 8px;
     }
 
     .math-answer {
         min-height: 60px;
         font-size: 21px;
     }
-
-    .quick-math-question {
-        margin: 28px 0;
-    }
 }
 
 @media (hover: none) and (pointer: coarse) {
-    .mobile-game-controls {
-        display: flex;
-    }
-
-    .mobile-controls {
+    .mobile-controls,
+    .mobile-game-controls,
+    .snake-mobile-controls {
         display: flex;
     }
 
@@ -1193,7 +1311,135 @@
         display: block;
     }
 
+    .game-button {
+        min-height: 44px;
+    }
+
     button {
         -webkit-tap-highlight-color: transparent;
+    }
+}
+
+.game-box {
+    background: #000;
+    color: #fff;
+    border-color: #222;
+}
+
+.game-box .game-toolbar strong,
+.game-box .game-status,
+.game-box .battleship-phase,
+.game-box .billiards-power {
+    color: #fff;
+}
+
+.game-box .game-status {
+    color: #aaa;
+}
+
+.game-box .game-button,
+.game-box .mode-button,
+.game-box .mobile-game-button,
+.game-box .mobile-control,
+.game-box .mobile-controls button,
+.game-box .pong-control-group button,
+.game-box .tetris-controls button,
+.game-box .number-pad button {
+    background: #111;
+    color: #fff;
+    border-color: #333;
+}
+
+.game-box .game-button:hover,
+.game-box .mode-button:hover,
+.game-box .mobile-game-button:hover,
+.game-box .mobile-control:hover {
+    background: #1a1a1a;
+    border-color: #555;
+}
+
+.game-box .mode-button.active {
+    background: #1d3322;
+    border-color: #3f8f55;
+    color: #fff;
+}
+
+.game-error {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.game-error p {
+    color: #aaa;
+}
+
+.billiards-canvas,
+.air-hockey-canvas {
+    display: block;
+    width: min(100%, 900px);
+    height: auto;
+    margin: 0 auto;
+    background: #000;
+    border: 1px solid #222;
+    border-radius: 10px;
+    touch-action: none;
+}
+
+.billiards-power {
+    width: min(600px, 100%);
+    margin: 16px auto 0;
+    text-align: center;
+}
+
+.billiards-power-bar {
+    height: 10px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #222;
+}
+
+.billiards-power-fill {
+    width: 0;
+    height: 100%;
+    background: #3f8f55;
+    transition: width .05s linear;
+}
+
+.hockey-score {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+    color: #fff;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.air-hockey-canvas {
+    width: min(100%, 800px);
+}
+
+@media (max-width: 700px) {
+    .game-box {
+        padding: 12px;
+    }
+
+    .billiards-canvas,
+    .air-hockey-canvas {
+        width: 100%;
+    }
+
+    .billiards-power {
+        font-size: 14px;
+    }
+
+    .hockey-score {
+        font-size: 24px;
+    }
+
+    .game-box button {
+        touch-action: manipulation;
     }
 }
