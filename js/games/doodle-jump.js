@@ -23,7 +23,7 @@ window.createDoodleJump = function(root) {
             </div>
 
             <p class="game-status doodle-status">
-                Стрелки или кнопки для движения.
+                Стрелки или кнопки. На телефоне - касайся левой/правой половины поля.
             </p>
         </div>
     `;
@@ -49,11 +49,13 @@ window.createDoodleJump = function(root) {
     let platforms;
     let keys;
     let score;
-    let animation;
+    let height;
     let running;
 
+    const touches = new Map();
+
     function start() {
-        cancelAnimationFrame(animation);
+        loop.stop();
 
         player = {
             x: 180,
@@ -84,26 +86,41 @@ window.createDoodleJump = function(root) {
 
         keys = {};
         score = 0;
+        height = 0;
         running = true;
+        touches.clear();
 
         scoreElement.textContent = score;
 
         status.textContent =
-            "Стрелки или кнопки для движения.";
+            "Стрелки или кнопки. На телефоне - касайся левой/правой половины поля.";
 
-        loop();
+        loop.start();
+    }
+
+    function touchDirection() {
+        let direction = 0;
+
+        touches.forEach(value => {
+            direction = value;
+        });
+
+        return direction;
     }
 
     function update() {
-        if (!running) return;
+        if (!running) return false;
 
-        if (keys.ArrowLeft || keys.KeyA) {
-            player.vx = -4;
+        const touch = touchDirection();
+
+        if (keys.ArrowLeft || keys.KeyA || touch < 0) {
+            player.vx = -4.5;
         } else if (
             keys.ArrowRight ||
-            keys.KeyD
+            keys.KeyD ||
+            touch > 0
         ) {
-            player.vx = 4;
+            player.vx = 4.5;
         } else {
             player.vx *= 0.8;
         }
@@ -143,10 +160,7 @@ window.createDoodleJump = function(root) {
 
                     player.vy = -10;
 
-                    score++;
-
-                    scoreElement.textContent =
-                        score;
+                    GameBox.sound("jump");
                 }
             });
         }
@@ -155,6 +169,16 @@ window.createDoodleJump = function(root) {
             const shift = 220 - player.y;
 
             player.y = 220;
+
+            // Очки - за набранную высоту, а не за повторные прыжки на одной платформе.
+            height += shift;
+
+            const newScore = Math.floor(height / 10);
+
+            if (newScore !== score) {
+                score = newScore;
+                scoreElement.textContent = score;
+            }
 
             platforms.forEach(platform => {
                 platform.y += shift;
@@ -172,10 +196,14 @@ window.createDoodleJump = function(root) {
                     )
                 );
 
+                // С ростом высоты платформы становятся реже и уже.
+                const gap = Math.min(105, 70 + score / 40);
+                const width = Math.max(55, 80 - score / 100);
+
                 platforms.push({
-                    x: Math.random() * 300,
-                    y: highest - 70,
-                    width: 80,
+                    x: Math.random() * (canvas.width - width),
+                    y: highest - gap,
+                    width,
                     height: 12
                 });
             }
@@ -185,7 +213,16 @@ window.createDoodleJump = function(root) {
             running = false;
 
             status.textContent =
-                "Игра окончена. Нажми «Заново».";
+                `Игра окончена. Счёт: ${score}. Нажми «Заново» или пробел.`;
+
+            GameBox.sound("lose");
+            GameBox.vibrate([80, 40, 80]);
+            GameBox.submit(score);
+
+            draw();
+            loop.stop();
+
+            return false;
         }
     }
 
@@ -210,7 +247,7 @@ window.createDoodleJump = function(root) {
             );
         });
 
-        ctx.fillStyle = "#171917";
+        ctx.fillStyle = "#3f8f55";
 
         ctx.fillRect(
             player.x,
@@ -218,17 +255,33 @@ window.createDoodleJump = function(root) {
             player.width,
             player.height
         );
+
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(player.x + 6, player.y + 7, 6, 6);
+        ctx.fillRect(player.x + 16, player.y + 7, 6, 6);
+        ctx.fillStyle = "#111";
+        ctx.fillRect(player.x + 8 + Math.sign(player.vx) * 1.5, player.y + 9, 3, 3);
+        ctx.fillRect(player.x + 18 + Math.sign(player.vx) * 1.5, player.y + 9, 3, 3);
+
+        if (!running) {
+            ctx.fillStyle = "rgba(0, 0, 0, .55)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 28px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(`Счёт: ${score}`, canvas.width / 2, canvas.height / 2);
+        }
     }
 
-    function loop() {
-        update();
-        draw();
-
-        animation =
-            requestAnimationFrame(loop);
-    }
+    const loop = GameBox.loop(update, draw);
 
     function keydown(event) {
+        if (!running && (event.code === "Space" || event.code === "Enter")) {
+            event.preventDefault();
+            start();
+            return;
+        }
+
         keys[event.code] = true;
 
         if (
@@ -246,52 +299,68 @@ window.createDoodleJump = function(root) {
     }
 
     controls.forEach(button => {
-        button.addEventListener(
-            "pointerdown",
-            event => {
-                event.preventDefault();
+        const key =
+            button.dataset.dir === "left"
+                ? "ArrowLeft"
+                : "ArrowRight";
 
-                keys[
-                    button.dataset.dir === "left"
-                        ? "ArrowLeft"
-                        : "ArrowRight"
-                ] = true;
-            }
-        );
-
-        button.addEventListener(
-            "pointerup",
+        GameBox.hold(
+            button,
             () => {
-                keys[
-                    button.dataset.dir === "left"
-                        ? "ArrowLeft"
-                        : "ArrowRight"
-                ] = false;
-            }
-        );
-
-        button.addEventListener(
-            "pointercancel",
+                keys[key] = true;
+            },
             () => {
-                keys[
-                    button.dataset.dir === "left"
-                        ? "ArrowLeft"
-                        : "ArrowRight"
-                ] = false;
+                keys[key] = false;
             }
         );
     });
+
+    canvas.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        if (!running) {
+            start();
+            return;
+        }
+
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (error) {}
+
+        const point = GameBox.point(canvas, event);
+        touches.set(event.pointerId, point.x < canvas.width / 2 ? -1 : 1);
+    });
+
+    canvas.addEventListener("pointermove", event => {
+        if (!touches.has(event.pointerId)) return;
+
+        const point = GameBox.point(canvas, event);
+        touches.set(event.pointerId, point.x < canvas.width / 2 ? -1 : 1);
+    });
+
+    ["pointerup", "pointercancel"].forEach(type => {
+        canvas.addEventListener(type, event => {
+            touches.delete(event.pointerId);
+        });
+    });
+
+    function blur() {
+        keys = {};
+        touches.clear();
+    }
 
     restart.addEventListener("click", start);
 
     document.addEventListener("keydown", keydown);
     document.addEventListener("keyup", keyup);
+    window.addEventListener("blur", blur);
 
     start();
 
     return function() {
-        cancelAnimationFrame(animation);
+        loop.stop();
         document.removeEventListener("keydown", keydown);
         document.removeEventListener("keyup", keyup);
+        window.removeEventListener("blur", blur);
     };
 };

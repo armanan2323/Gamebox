@@ -5,6 +5,7 @@ window.createBreakout = function(root) {
                 <strong>
                     Счёт:
                     <span class="breakout-score">0</span>
+                    · Жизни: <span class="breakout-lives">3</span>
                 </strong>
 
                 <button class="game-button breakout-restart">
@@ -19,7 +20,7 @@ window.createBreakout = function(root) {
             ></canvas>
 
             <p class="game-status breakout-status">
-                Управление: A / D или ← / →
+                A / D или ← / →, мышь или палец. Пробел или тап - запуск мяча.
             </p>
 
             <div class="mobile-game-controls">
@@ -69,6 +70,11 @@ window.createBreakout = function(root) {
             ".breakout-right"
         );
 
+    const livesElement =
+        root.querySelector(
+            ".breakout-lives"
+        );
+
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
 
@@ -94,10 +100,21 @@ window.createBreakout = function(root) {
     const BRICK_HEIGHT = 22;
     const BRICK_GAP = 7;
 
+    const ROW_COLORS = [
+        "#e57373",
+        "#ffb74d",
+        "#fff176",
+        "#81c784",
+        "#64b5f6"
+    ];
+
     let bricks = [];
     let score = 0;
+    let lives = 3;
+    let level = 1;
     let running = true;
-    let animationId = null;
+    let launched = false;
+    let targetX = null;
 
     const keys = {
         left: false,
@@ -139,49 +156,80 @@ window.createBreakout = function(root) {
 
                     width: BRICK_WIDTH,
                     height: BRICK_HEIGHT,
+                    color: ROW_COLORS[row % ROW_COLORS.length],
+                    points: BRICK_ROWS - row,
                     alive: true
                 });
             }
         }
     }
 
+    function ballSpeed() {
+        return Math.min(9, 5 + (level - 1) * 0.6);
+    }
+
+    function resetBall() {
+        launched = false;
+
+        ball.x = paddle.x + paddle.width / 2;
+        ball.y = paddle.y - ball.radius - 1;
+        ball.dx = 0;
+        ball.dy = 0;
+    }
+
+    function launch() {
+        if (!running || launched) return;
+
+        launched = true;
+
+        const angle = (Math.random() * 0.6 - 0.3);
+        const speed = ballSpeed();
+
+        ball.dx = Math.sin(angle) * speed;
+        ball.dy = -Math.cos(angle) * speed;
+
+        GameBox.sound("bounce");
+    }
+
     function reset() {
-        if (animationId) {
-            cancelAnimationFrame(
-                animationId
-            );
-        }
+        loop.stop();
 
         score = 0;
+        lives = 3;
+        level = 1;
         running = true;
+        targetX = null;
 
-        scoreElement.textContent =
-            "0";
+        scoreElement.textContent = "0";
+        livesElement.textContent = "3";
 
         statusElement.textContent =
-            "Управление: A / D или ← / →";
+            "A / D или ← / →, мышь или палец. Пробел или тап - запуск мяча.";
 
         paddle.x =
             WIDTH / 2 -
             paddle.width / 2;
 
-        ball.x = WIDTH / 2;
-        ball.y = HEIGHT - 60;
-        ball.dx = 3.2;
-        ball.dy = -3.2;
-
         createBricks();
+        resetBall();
 
-        loop();
+        loop.start();
     }
 
     function updatePaddle() {
         if (keys.left) {
             paddle.x -= paddle.speed;
+            targetX = null;
         }
 
         if (keys.right) {
             paddle.x += paddle.speed;
+            targetX = null;
+        }
+
+        if (targetX !== null) {
+            const diff = targetX - (paddle.x + paddle.width / 2);
+            paddle.x += Math.max(-paddle.speed * 2, Math.min(paddle.speed * 2, diff));
         }
 
         paddle.x = Math.max(
@@ -194,89 +242,97 @@ window.createBreakout = function(root) {
     }
 
     function updateBall() {
+        if (!launched) {
+            ball.x = paddle.x + paddle.width / 2;
+            ball.y = paddle.y - ball.radius - 1;
+            return;
+        }
+
         ball.x += ball.dx;
         ball.y += ball.dy;
 
-        if (
-            ball.x - ball.radius <= 0 ||
-            ball.x + ball.radius >= WIDTH
-        ) {
-            ball.dx *= -1;
+        if (ball.x - ball.radius <= 0) {
+            ball.x = ball.radius;
+            ball.dx = Math.abs(ball.dx);
+            GameBox.sound("move");
+        }
+
+        if (ball.x + ball.radius >= WIDTH) {
+            ball.x = WIDTH - ball.radius;
+            ball.dx = -Math.abs(ball.dx);
+            GameBox.sound("move");
+        }
+
+        if (ball.y - ball.radius <= 0) {
+            ball.y = ball.radius;
+            ball.dy = Math.abs(ball.dy);
+            GameBox.sound("move");
         }
 
         if (
-            ball.y - ball.radius <= 0
-        ) {
-            ball.dy *= -1;
-        }
-
-        if (
-            ball.y + ball.radius >=
-                paddle.y &&
-            ball.y - ball.radius <=
-                paddle.y +
-                    paddle.height &&
-            ball.x >= paddle.x &&
-            ball.x <=
-                paddle.x +
-                    paddle.width &&
-            ball.dy > 0
+            ball.dy > 0 &&
+            ball.y + ball.radius >= paddle.y &&
+            ball.y - ball.radius <= paddle.y + paddle.height &&
+            ball.x + ball.radius >= paddle.x &&
+            ball.x - ball.radius <= paddle.x + paddle.width
         ) {
             const hitPosition =
                 (ball.x - paddle.x) /
                 paddle.width;
 
+            // Угол ограничен ±60°, чтобы мяч не летал горизонтально.
             const angle =
-                (hitPosition - 0.5) *
-                2;
+                Math.max(-1, Math.min(1, (hitPosition - 0.5) * 2)) *
+                (Math.PI / 3);
 
-            const speed = 4.5;
+            const speed = ballSpeed();
 
-            ball.dx =
-                angle * speed;
+            ball.dx = Math.sin(angle) * speed;
+            ball.dy = -Math.cos(angle) * speed;
+            ball.y = paddle.y - ball.radius;
 
-            ball.dy =
-                -Math.sqrt(
-                    speed * speed -
-                        ball.dx *
-                            ball.dx
-                );
+            GameBox.sound("bounce");
         }
 
-        bricks.forEach(
-            brick => {
-                if (!brick.alive) {
-                    return;
-                }
+        // Разбиваем максимум один блок за шаг и отражаем по нужной оси.
+        for (const brick of bricks) {
+            if (!brick.alive) continue;
 
-                if (
-                    ball.x +
-                        ball.radius >
-                        brick.x &&
-                    ball.x -
-                        ball.radius <
-                        brick.x +
-                            brick.width &&
-                    ball.y +
-                        ball.radius >
-                        brick.y &&
-                    ball.y -
-                        ball.radius <
-                        brick.y +
-                            brick.height
-                ) {
-                    brick.alive =
-                        false;
+            const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
+            const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
+            const dx = ball.x - closestX;
+            const dy = ball.y - closestY;
 
-                    score++;
+            if (dx * dx + dy * dy > ball.radius * ball.radius) continue;
 
-                    scoreElement.textContent =
-                        score;
+            brick.alive = false;
 
-                    ball.dy *= -1;
-                }
+            score += brick.points;
+            scoreElement.textContent = score;
+
+            const overlapX = Math.min(
+                ball.x + ball.radius - brick.x,
+                brick.x + brick.width - (ball.x - ball.radius)
+            );
+
+            const overlapY = Math.min(
+                ball.y + ball.radius - brick.y,
+                brick.y + brick.height - (ball.y - ball.radius)
+            );
+
+            if (overlapX < overlapY) {
+                ball.dx = ball.x < brick.x + brick.width / 2
+                    ? -Math.abs(ball.dx)
+                    : Math.abs(ball.dx);
+            } else {
+                ball.dy = ball.y < brick.y + brick.height / 2
+                    ? -Math.abs(ball.dy)
+                    : Math.abs(ball.dy);
             }
-        );
+
+            GameBox.sound("hit");
+            break;
+        }
 
         if (
             bricks.every(
@@ -284,12 +340,15 @@ window.createBreakout = function(root) {
                     !brick.alive
             )
         ) {
-            running = false;
+            level++;
 
             statusElement.textContent =
-                "Ты победил! Все блоки разбиты.";
+                `Уровень ${level}! Мяч стал быстрее.`;
 
-            draw();
+            GameBox.sound("win");
+
+            createBricks();
+            resetBall();
 
             return;
         }
@@ -299,12 +358,31 @@ window.createBreakout = function(root) {
                 ball.radius >
                 HEIGHT
         ) {
+            lives--;
+            livesElement.textContent = lives;
+
+            GameBox.vibrate(120);
+
+            if (lives > 0) {
+                GameBox.sound("error");
+                statusElement.textContent =
+                    `Мяч потерян. Осталось жизней: ${lives}`;
+                resetBall();
+                return;
+            }
+
             running = false;
 
             statusElement.textContent =
-                "Игра окончена. Нажми «Заново».";
+                `Игра окончена. Счёт: ${score}. Нажми «Заново» или пробел.`;
+
+            GameBox.sound("lose");
+            GameBox.submit(score);
 
             draw();
+            loop.stop();
+
+            return false;
         }
     }
 
@@ -317,7 +395,7 @@ window.createBreakout = function(root) {
         );
 
         ctx.fillStyle =
-            "#f7f8f6";
+            "#101310";
 
         ctx.fillRect(
             0,
@@ -327,7 +405,7 @@ window.createBreakout = function(root) {
         );
 
         ctx.fillStyle =
-            "#222";
+            "#f2f4f1";
 
         ctx.fillRect(
             paddle.x,
@@ -343,7 +421,7 @@ window.createBreakout = function(root) {
                 }
 
                 ctx.fillStyle =
-                    "#3f8f55";
+                    brick.color;
 
                 ctx.fillRect(
                     brick.x,
@@ -365,16 +443,42 @@ window.createBreakout = function(root) {
         );
 
         ctx.fillStyle =
-            "#222";
+            "#fff";
 
         ctx.fill();
 
         ctx.closePath();
+
+        if (!running) {
+            ctx.fillStyle = "rgba(0, 0, 0, .55)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 32px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", WIDTH / 2, HEIGHT / 2);
+        } else if (!launched) {
+            ctx.fillStyle = "rgba(255, 255, 255, .8)";
+            ctx.font = "18px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("Пробел или тап - запуск", WIDTH / 2, HEIGHT / 2 + 40);
+        }
     }
 
     function keyDown(event) {
         const key =
             event.key.toLowerCase();
+
+        if (key === " " || key === "enter" || event.key === "ArrowUp") {
+            event.preventDefault();
+
+            if (!running) {
+                reset();
+            } else {
+                launch();
+            }
+
+            return;
+        }
 
         if (
             key === "a" ||
@@ -418,95 +522,71 @@ window.createBreakout = function(root) {
         }
     }
 
-    function setMobileKey(
-        key,
-        value
-    ) {
-        return event => {
-            event.preventDefault();
-            keys[key] = value;
-        };
+    function mobileButton(button, key) {
+        GameBox.hold(
+            button,
+            () => {
+                keys[key] = true;
+                launch();
+            },
+            () => {
+                keys[key] = false;
+            }
+        );
     }
 
-    const leftStart =
-        setMobileKey(
-            "left",
-            true
-        );
+    mobileButton(leftButton, "left");
+    mobileButton(rightButton, "right");
 
-    const rightStart =
-        setMobileKey(
-            "right",
-            true
-        );
+    // Ракетка следует за мышью/пальцем, тап запускает мяч.
+    function pointerDown(event) {
+        event.preventDefault();
 
-    const leftEnd =
-        setMobileKey(
-            "left",
-            false
-        );
-
-    const rightEnd =
-        setMobileKey(
-            "right",
-            false
-        );
-
-    leftButton.addEventListener(
-        "pointerdown",
-        leftStart
-    );
-
-    rightButton.addEventListener(
-        "pointerdown",
-        rightStart
-    );
-
-    leftButton.addEventListener(
-        "pointerup",
-        leftEnd
-    );
-
-    leftButton.addEventListener(
-        "pointercancel",
-        leftEnd
-    );
-
-    leftButton.addEventListener(
-        "pointerleave",
-        leftEnd
-    );
-
-    rightButton.addEventListener(
-        "pointerup",
-        rightEnd
-    );
-
-    rightButton.addEventListener(
-        "pointercancel",
-        rightEnd
-    );
-
-    rightButton.addEventListener(
-        "pointerleave",
-        rightEnd
-    );
-
-    function loop() {
         if (!running) {
-            draw();
+            reset();
             return;
         }
 
-        updatePaddle();
-        updateBall();
-        draw();
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (error) {}
 
-        animationId =
-            requestAnimationFrame(
-                loop
-            );
+        targetX = GameBox.point(canvas, event).x;
+        launch();
     }
+
+    function pointerMove(event) {
+        if (event.pointerType === "mouse" || event.buttons) {
+            targetX = GameBox.point(canvas, event).x;
+        }
+    }
+
+    function pointerUp(event) {
+        if (event.pointerType !== "mouse") {
+            targetX = null;
+        }
+    }
+
+    canvas.addEventListener("pointerdown", pointerDown);
+    canvas.addEventListener("pointermove", pointerMove);
+    canvas.addEventListener("pointerup", pointerUp);
+    canvas.addEventListener("pointercancel", pointerUp);
+
+    function step() {
+        if (!running) return false;
+
+        updatePaddle();
+        return updateBall();
+    }
+
+    const loop = GameBox.loop(step, draw);
+
+    function blur() {
+        keys.left = false;
+        keys.right = false;
+    }
+
+    window.addEventListener("blur", blur);
 
     document.addEventListener(
         "keydown",
@@ -526,11 +606,7 @@ window.createBreakout = function(root) {
     reset();
 
     return function cleanup() {
-        if (animationId) {
-            cancelAnimationFrame(
-                animationId
-            );
-        }
+        loop.stop();
 
         document.removeEventListener(
             "keydown",
@@ -542,49 +618,11 @@ window.createBreakout = function(root) {
             keyUp
         );
 
+        window.removeEventListener("blur", blur);
+
         restartButton.removeEventListener(
             "click",
             reset
-        );
-
-        leftButton.removeEventListener(
-            "pointerdown",
-            leftStart
-        );
-
-        rightButton.removeEventListener(
-            "pointerdown",
-            rightStart
-        );
-
-        leftButton.removeEventListener(
-            "pointerup",
-            leftEnd
-        );
-
-        leftButton.removeEventListener(
-            "pointercancel",
-            leftEnd
-        );
-
-        leftButton.removeEventListener(
-            "pointerleave",
-            leftEnd
-        );
-
-        rightButton.removeEventListener(
-            "pointerup",
-            rightEnd
-        );
-
-        rightButton.removeEventListener(
-            "pointercancel",
-            rightEnd
-        );
-
-        rightButton.removeEventListener(
-            "pointerleave",
-            rightEnd
         );
     };
 };

@@ -19,7 +19,7 @@ window.createReaction = function(root) {
             </div>
 
             <p class="game-status reaction-status">
-                Нажми «Начать» и жди сигнала.
+                Нажми на круг или «Начать» и жди зелёного сигнала. Можно пробелом.
             </p>
         </div>
     `;
@@ -41,7 +41,8 @@ window.createReaction = function(root) {
 
     let timer;
     let startTime;
-    let waiting;
+    let waiting = false;
+    let results = [];
 
     function start() {
         clearTimeout(timer);
@@ -49,9 +50,7 @@ window.createReaction = function(root) {
         waiting = true;
         startTime = 0;
 
-        score.textContent = "-";
-
-        target.classList.remove("ready");
+        target.classList.remove("ready", "early");
 
         target.textContent = "ЖДИ...";
 
@@ -65,32 +64,50 @@ window.createReaction = function(root) {
             target.classList.add("ready");
             target.textContent = "ЖМИ!";
 
+            GameBox.sound("go");
+
             status.textContent =
                 "Нажимай как можно быстрее.";
         }, 1200 + Math.random() * 2500);
     }
 
-    function clickTarget() {
+    // pointerdown срабатывает сразу при касании - без задержки click на телефонах.
+    function clickTarget(event) {
+        if (event) event.preventDefault();
+
         if (waiting) {
             clearTimeout(timer);
 
             waiting = false;
 
             target.classList.remove("ready");
+            target.classList.add("early");
             target.textContent = "РАНО!";
 
             status.textContent =
-                "Ты нажал слишком рано. Попробуй ещё раз.";
+                "Ты нажал слишком рано. Нажми на круг, чтобы попробовать ещё раз.";
+
+            GameBox.sound("error");
+            GameBox.vibrate(80);
 
             return;
         }
 
-        if (!startTime) return;
+        if (!startTime) {
+            start();
+            return;
+        }
 
         const result =
             Math.round(
                 performance.now() - startTime
             );
+
+        results.push(result);
+
+        const average = Math.round(
+            results.reduce((sum, value) => sum + value, 0) / results.length
+        );
 
         score.textContent = `${result} мс`;
 
@@ -98,15 +115,30 @@ window.createReaction = function(root) {
         target.textContent = `${result} мс`;
 
         status.textContent =
-            "Нажми «Начать», чтобы попробовать ещё раз.";
+            `Среднее за ${results.length}: ${average} мс. Нажми на круг, чтобы попробовать ещё раз.`;
+
+        GameBox.sound("score");
+        GameBox.submit(result);
 
         startTime = 0;
     }
 
+    function keydown(event) {
+        if (event.code === "Space" || event.code === "Enter") {
+            event.preventDefault();
+
+            if (!event.repeat) clickTarget();
+        }
+    }
+
     target.addEventListener(
-        "click",
+        "pointerdown",
         clickTarget
     );
+
+    target.addEventListener("contextmenu", event => event.preventDefault());
+
+    document.addEventListener("keydown", keydown);
 
     restart.addEventListener(
         "click",
@@ -115,5 +147,6 @@ window.createReaction = function(root) {
 
     return function() {
         clearTimeout(timer);
+        document.removeEventListener("keydown", keydown);
     };
 };

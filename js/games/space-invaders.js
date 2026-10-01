@@ -94,6 +94,14 @@ window.createSpaceInvaders = function(root) {
         loop();
     }
 
+    function endGame(text, sound) {
+        running = false;
+        status.textContent = text;
+
+        GameBox.sound(sound);
+        GameBox.submit(score);
+    }
+
     function update() {
         if (!running) return;
 
@@ -202,6 +210,8 @@ window.createSpaceInvaders = function(root) {
 
                     score += 10;
                     scoreElement.textContent = score;
+
+                    GameBox.sound("explode");
                 }
             });
         });
@@ -222,22 +232,24 @@ window.createSpaceInvaders = function(root) {
                 lives--;
                 livesElement.textContent = lives;
 
+                GameBox.sound("hit");
+                GameBox.vibrate(120);
+
                 if (lives <= 0) {
-                    running = false;
-                    status.textContent =
-                        "Игра окончена. Нажми «Заново».";
+                    endGame("Игра окончена. Нажми «Заново».", "lose");
                 }
             }
         });
+
+        if (!running) return;
 
         const alive = enemies.filter(
             enemy => enemy.alive
         );
 
         if (!alive.length) {
-            running = false;
-            status.textContent =
-                "Победа! Все враги уничтожены.";
+            endGame("Победа! Все враги уничтожены.", "win");
+            return;
         }
 
         if (
@@ -247,9 +259,7 @@ window.createSpaceInvaders = function(root) {
                     player.y
             )
         ) {
-            running = false;
-            status.textContent =
-                "Враги добрались до базы.";
+            endGame("Враги добрались до базы.", "lose");
         }
     }
 
@@ -264,6 +274,8 @@ window.createSpaceInvaders = function(root) {
             width: 4,
             height: 12
         });
+
+        GameBox.sound("shoot");
     }
 
     function draw() {
@@ -346,23 +358,23 @@ window.createSpaceInvaders = function(root) {
     }
 
     controls.forEach(button => {
-        button.addEventListener("pointerdown", event => {
-            event.preventDefault();
+        const action = button.dataset.action;
 
-            const action = button.dataset.action;
+        GameBox.hold(button, () => {
+            if (!running) return;
 
             if (action === "left") {
-                player.x -= 35;
+                player.x = Math.max(0, player.x - 35);
             }
 
             if (action === "right") {
-                player.x += 35;
+                player.x = Math.min(canvas.width - player.width, player.x + 35);
             }
 
             if (action === "shoot") {
                 shoot();
             }
-        });
+        }, null, { repeat: 110, delay: 200 });
     });
 
     restart.addEventListener("click", start);

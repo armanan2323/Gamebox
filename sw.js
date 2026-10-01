@@ -1,9 +1,10 @@
-const CACHE_NAME = "gamebox-v3";
+const CACHE_NAME = "gamebox-v4";
 
 const FILES = [
     "./",
     "./index.html",
     "./manifest.json",
+    "./favicon.png",
     "./css/style.css",
     "./css/games.css",
     "./js/app.js",
@@ -57,37 +58,47 @@ self.addEventListener("activate", event => {
     self.clients.claim();
 });
 
+// Сначала отдаём из кэша (быстро и офлайн), а в фоне обновляем файл из сети,
+// чтобы после обновления сайта игроки получали новую версию.
 self.addEventListener("fetch", event => {
+
+    const request = event.request;
+
+    if (
+        request.method !== "GET" ||
+        !request.url.startsWith(self.location.origin)
+    ) {
+        return;
+    }
 
     event.respondWith(
 
-        caches.match(event.request)
-            .then(cached => {
+        caches.open(CACHE_NAME).then(cache =>
+            cache.match(request, { ignoreSearch: true }).then(cached => {
 
-                if (cached) {
-                    return cached;
-                }
-
-                return fetch(event.request)
+                const network = fetch(request)
                     .then(response => {
-
-                        const copy = response.clone();
-
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                cache.put(
-                                    event.request,
-                                    copy
-                                );
-                            });
+                        if (response && response.ok) {
+                            cache.put(request, response.clone());
+                        }
 
                         return response;
                     })
-                    .catch(() => {
-                        return caches.match("./index.html");
-                    });
+                    .catch(() => null);
 
+                if (cached) {
+                    event.waitUntil(network);
+                    return cached;
+                }
+
+                return network.then(response =>
+                    response ||
+                    (request.mode === "navigate"
+                        ? cache.match("./index.html")
+                        : Response.error())
+                );
             })
+        )
 
     );
 });

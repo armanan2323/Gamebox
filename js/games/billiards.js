@@ -21,7 +21,8 @@ window.createBilliards = function(root) {
             </div>
 
             <p class="game-status billiards-status">
-                Потяните от белого шара назад и отпустите
+                Нажмите в любом месте стола, потяните назад (как рогатку) и отпустите.
+                Забили шар - бьёте ещё раз.
             </p>
         </div>
     `;
@@ -52,10 +53,18 @@ window.createBilliards = function(root) {
     let score1 = 0;
     let score2 = 0;
     let aiming = false;
+    let aimStart = null;
     let aimPoint = null;
+    let aimPointer = null;
     let shotPower = 0;
     let moving = false;
-    let animationId = null;
+    let gameOver = false;
+    let pocketedThisShot = 0;
+    let cueFoul = false;
+    let collisionSoundTime = 0;
+
+    const MAX_DRAG = 160;
+    const MAX_SPEED = 13;
 
     const pockets = [
         [table.x, table.y],
@@ -79,6 +88,8 @@ window.createBilliards = function(root) {
     }
 
     function reset() {
+        loop.stop();
+
         balls = [];
 
         balls.push(
@@ -108,11 +119,11 @@ window.createBilliards = function(root) {
 
         for (let row = 0; row < 5; row++) {
             for (let col = 0; col <= row; col++) {
-                const x = startX + row * (ballRadius * 2 + 1);
+                const x = startX + row * (ballRadius * 2 * 0.88);
                 const y =
                     startY -
-                    row * ballRadius +
-                    col * (ballRadius * 2);
+                    row * (ballRadius + 0.5) +
+                    col * (ballRadius * 2 + 1);
 
                 balls.push(
                     createBall(
@@ -131,17 +142,24 @@ window.createBilliards = function(root) {
         score1 = 0;
         score2 = 0;
         aiming = false;
+        aimStart = null;
         aimPoint = null;
+        aimPointer = null;
         shotPower = 0;
         moving = false;
+        gameOver = false;
+
+        statusElement.textContent =
+            "Нажмите в любом месте стола, потяните назад и отпустите. Забили шар - бьёте ещё раз.";
 
         updateUI();
         draw();
     }
 
     function updateUI() {
-        turnElement.textContent =
-            `Ход игрока ${currentPlayer}`;
+        turnElement.textContent = gameOver
+            ? "Игра окончена"
+            : `Ход: ${GameBox.name(currentPlayer)}`;
 
         scoreElement.textContent =
             `${score1}:${score2}`;
@@ -150,58 +168,51 @@ window.createBilliards = function(root) {
             `${Math.round(shotPower * 100)}%`;
     }
 
-    function getMousePosition(event) {
-        const rect = canvas.getBoundingClientRect();
-
-        return {
-            x: (event.clientX - rect.left) *
-                (canvas.width / rect.width),
-            y: (event.clientY - rect.top) *
-                (canvas.height / rect.height)
-        };
-    }
-
     function getCueBall() {
         return balls[0];
     }
 
-    function startAim(point) {
+    // Направление удара: от точки, куда оттянули палец, к точке нажатия.
+    function aimVector() {
+        if (!aimStart || !aimPoint) return null;
+
+        const dx = aimStart.x - aimPoint.x;
+        const dy = aimStart.y - aimPoint.y;
+        const distance = Math.hypot(dx, dy);
+
+        if (distance < 6) return null;
+
+        return {
+            nx: dx / distance,
+            ny: dy / distance,
+            power: Math.min(distance / MAX_DRAG, 1)
+        };
+    }
+
+    function startAim(point, pointerId) {
         const cue = getCueBall();
 
-        if (!cue || !cue.active || moving) {
-            return;
-        }
-
-        const distance = Math.hypot(
-            point.x - cue.x,
-            point.y - cue.y
-        );
-
-        if (distance > 100) {
+        if (!cue || !cue.active || moving || gameOver) {
             return;
         }
 
         aiming = true;
+        aimStart = point;
         aimPoint = point;
-        updateAim();
+        aimPointer = pointerId;
+        shotPower = 0;
+
+        updateUI();
+        draw();
     }
 
-    function updateAim() {
-        if (!aiming || !aimPoint) {
-            return;
-        }
+    function updateAim(point) {
+        if (!aiming) return;
 
-        const cue = getCueBall();
+        aimPoint = point;
 
-        const dx = cue.x - aimPoint.x;
-        const dy = cue.y - aimPoint.y;
-
-        const distance = Math.hypot(dx, dy);
-
-        shotPower = Math.min(
-            distance / 150,
-            1
-        );
+        const vector = aimVector();
+        shotPower = vector ? vector.power : 0;
 
         updateUI();
         draw();
@@ -213,90 +224,81 @@ window.createBilliards = function(root) {
         }
 
         const cue = getCueBall();
+        const vector = aimVector();
 
-        if (!cue) {
-            return;
-        }
+        aiming = false;
+        aimPointer = null;
 
-        const dx = cue.x - aimPoint.x;
-        const dy = cue.y - aimPoint.y;
-
-        const distance = Math.hypot(dx, dy);
-
-        if (distance < 10) {
-            aiming = false;
+        if (!cue || !vector || vector.power < 0.05) {
+            aimStart = null;
+            aimPoint = null;
             shotPower = 0;
             updateUI();
             draw();
             return;
         }
 
-        const power = Math.min(
-            distance / 80,
-            1
-        );
+        cue.vx = vector.nx * vector.power * MAX_SPEED;
+        cue.vy = vector.ny * vector.power * MAX_SPEED;
 
-        cue.vx =
-            (dx / distance) *
-            power *
-            8;
-
-        cue.vy =
-            (dy / distance) *
-            power *
-            8;
-
-        aiming = false;
+        aimStart = null;
         aimPoint = null;
         shotPower = 0;
         moving = true;
+        pocketedThisShot = 0;
+        cueFoul = false;
 
         statusElement.textContent =
-            `Игрок ${currentPlayer} наносит удар`;
+            `${GameBox.name(currentPlayer)} наносит удар`;
+
+        GameBox.sound("hit");
 
         updateUI();
-        animate();
+        loop.start();
     }
 
-    function update() {
+    const SUBSTEPS = 4;
+
+    function step() {
+        if (!moving) return false;
+
+        // Несколько подшагов за кадр - быстрые шары не пролетают друг сквозь друга.
+        for (let i = 0; i < SUBSTEPS; i++) {
+            for (const ball of balls) {
+                if (!ball.active) continue;
+
+                ball.x += ball.vx / SUBSTEPS;
+                ball.y += ball.vy / SUBSTEPS;
+
+                handleWalls(ball);
+            }
+
+            handleCollisions();
+            handlePockets();
+        }
+
         let anyMoving = false;
 
         for (const ball of balls) {
-            if (!ball.active) {
-                continue;
-            }
-
-            ball.x += ball.vx;
-            ball.y += ball.vy;
+            if (!ball.active) continue;
 
             ball.vx *= 0.985;
             ball.vy *= 0.985;
 
-            if (
-                Math.abs(ball.vx) < 0.02 &&
-                Math.abs(ball.vy) < 0.02
-            ) {
+            if (Math.hypot(ball.vx, ball.vy) < 0.04) {
                 ball.vx = 0;
                 ball.vy = 0;
-            }
-
-            if (
-                Math.abs(ball.vx) > 0 ||
-                Math.abs(ball.vy) > 0
-            ) {
+            } else {
                 anyMoving = true;
             }
-
-            handleWalls(ball);
         }
-
-        handleCollisions();
-        handlePockets();
 
         moving = anyMoving;
 
         if (!moving) {
+            loop.stop();
             finishTurn();
+            return false;
         }
     }
 
@@ -313,24 +315,43 @@ window.createBilliards = function(root) {
             table.height -
             ballRadius;
 
+        let hit = false;
+
         if (ball.x < left) {
             ball.x = left;
-            ball.vx *= -0.85;
+            ball.vx = Math.abs(ball.vx) * 0.85;
+            hit = true;
         }
 
         if (ball.x > right) {
             ball.x = right;
-            ball.vx *= -0.85;
+            ball.vx = -Math.abs(ball.vx) * 0.85;
+            hit = true;
         }
 
         if (ball.y < top) {
             ball.y = top;
-            ball.vy *= -0.85;
+            ball.vy = Math.abs(ball.vy) * 0.85;
+            hit = true;
         }
 
         if (ball.y > bottom) {
             ball.y = bottom;
-            ball.vy *= -0.85;
+            ball.vy = -Math.abs(ball.vy) * 0.85;
+            hit = true;
+        }
+
+        if (hit && Math.hypot(ball.vx, ball.vy) > 2) {
+            collisionSound();
+        }
+    }
+
+    function collisionSound() {
+        const now = performance.now();
+
+        if (now - collisionSoundTime > 60) {
+            collisionSoundTime = now;
+            GameBox.sound("move");
         }
     }
 
@@ -384,13 +405,15 @@ window.createBilliards = function(root) {
                 }
 
                 const impulse =
-                    -relativeVelocity;
+                    -relativeVelocity * 0.97;
 
                 a.vx -= impulse * nx;
                 a.vy -= impulse * ny;
 
                 b.vx += impulse * nx;
                 b.vy += impulse * ny;
+
+                if (impulse > 0.6) collisionSound();
             }
         }
     }
@@ -413,15 +436,18 @@ window.createBilliards = function(root) {
                     ball.vy = 0;
 
                     if (ball === getCueBall()) {
-                        setTimeout(() => {
-                            respawnCueBall();
-                        }, 500);
+                        cueFoul = true;
+                        GameBox.sound("error");
                     } else {
+                        pocketedThisShot++;
+
                         if (currentPlayer === 1) {
                             score1++;
                         } else {
                             score2++;
                         }
+
+                        GameBox.sound("eat");
                     }
 
                     updateUI();
@@ -431,31 +457,76 @@ window.createBilliards = function(root) {
         }
     }
 
+    // Ставим биток на исходную точку или ближайшую свободную.
     function respawnCueBall() {
         const cue = getCueBall();
 
+        const baseX = table.x + 220;
+        const baseY = table.y + table.height / 2;
+
+        let x = baseX;
+        let y = baseY;
+
+        for (let attempt = 0; attempt < 60; attempt++) {
+            const free = balls.every(ball =>
+                ball === cue ||
+                !ball.active ||
+                Math.hypot(ball.x - x, ball.y - y) > ballRadius * 2 + 2
+            );
+
+            if (free) break;
+
+            x = baseX + (Math.random() - 0.5) * 160;
+            y = baseY + (Math.random() - 0.5) * 300;
+        }
+
         cue.active = true;
-        cue.x = table.x + 220;
-        cue.y = table.y + table.height / 2;
+        cue.x = x;
+        cue.y = y;
         cue.vx = 0;
         cue.vy = 0;
-
-        updateUI();
-        draw();
     }
 
     function finishTurn() {
-        if (balls.filter(ball => ball.active).length <= 1) {
-            statusElement.textContent =
-                "Игра окончена";
+        if (cueFoul) {
+            respawnCueBall();
+        }
+
+        const left = balls.filter(ball => ball !== getCueBall() && ball.active).length;
+
+        if (left === 0) {
+            gameOver = true;
+
+            let text;
+
+            if (score1 === score2) {
+                text = "Игра окончена - ничья!";
+                GameBox.sound("error");
+            } else {
+                const winner = score1 > score2 ? 1 : 2;
+                text = `Игра окончена! Победил ${GameBox.name(winner)}`;
+                GameBox.sound("win");
+                GameBox.vibrate(150);
+                GameBox.win(GameBox.name(winner));
+            }
+
+            statusElement.textContent = text;
+            updateUI();
+            draw();
             return;
         }
 
-        currentPlayer =
-            currentPlayer === 1 ? 2 : 1;
+        if (pocketedThisShot > 0 && !cueFoul) {
+            statusElement.textContent =
+                `Шар забит! ${GameBox.name(currentPlayer)} бьёт ещё раз`;
+        } else {
+            currentPlayer =
+                currentPlayer === 1 ? 2 : 1;
 
-        statusElement.textContent =
-            `Игрок ${currentPlayer}, ваш ход`;
+            statusElement.textContent = cueFoul
+                ? `Фол: биток в лузе. Ход: ${GameBox.name(currentPlayer)}`
+                : `${GameBox.name(currentPlayer)}, ваш ход`;
+        }
 
         updateUI();
         draw();
@@ -481,8 +552,11 @@ window.createBilliards = function(root) {
             table.height
         );
 
+        ctx.fillStyle = "#050505";
+        ctx.beginPath();
+
         for (const pocket of pockets) {
-            ctx.beginPath();
+            ctx.moveTo(pocket[0] + pocketRadius, pocket[1]);
             ctx.arc(
                 pocket[0],
                 pocket[1],
@@ -490,12 +564,16 @@ window.createBilliards = function(root) {
                 0,
                 Math.PI * 2
             );
-            ctx.fillStyle = "#050505";
-            ctx.fill();
         }
+
+        ctx.fill();
     }
 
     function drawBalls() {
+        ctx.font = "bold 9px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
         for (const ball of balls) {
             if (!ball.active) {
                 continue;
@@ -519,37 +597,51 @@ window.createBilliards = function(root) {
 
             if (ball.number) {
                 ctx.fillStyle = "#fff";
-                ctx.font = "8px Arial";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
                 ctx.fillText(
                     ball.number,
                     ball.x,
-                    ball.y
+                    ball.y + 0.5
                 );
             }
         }
     }
 
     function drawAim() {
-        if (!aiming || !aimPoint) {
+        if (!aiming) {
             return;
         }
 
+        const vector = aimVector();
+
+        if (!vector) return;
+
         const cue = getCueBall();
+        const length = 80 + vector.power * 260;
 
         ctx.beginPath();
         ctx.moveTo(cue.x, cue.y);
         ctx.lineTo(
-            cue.x + (cue.x - aimPoint.x),
-            cue.y + (cue.y - aimPoint.y)
+            cue.x + vector.nx * length,
+            cue.y + vector.ny * length
         );
 
-        ctx.strokeStyle = "#fff";
+        ctx.strokeStyle = "rgba(255, 255, 255, .85)";
         ctx.lineWidth = 2;
         ctx.setLineDash([8, 8]);
         ctx.stroke();
         ctx.setLineDash([]);
+
+        // Кий позади битка.
+        const back = ballRadius + 8 + vector.power * 50;
+
+        ctx.beginPath();
+        ctx.moveTo(cue.x - vector.nx * back, cue.y - vector.ny * back);
+        ctx.lineTo(cue.x - vector.nx * (back + 160), cue.y - vector.ny * (back + 160));
+        ctx.strokeStyle = "#d9b27c";
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.lineCap = "butt";
     }
 
     function draw() {
@@ -558,44 +650,50 @@ window.createBilliards = function(root) {
         drawAim();
     }
 
-    function animate() {
-        if (!moving) {
-            draw();
-            return;
-        }
-
-        update();
-        draw();
-
-        animationId =
-            requestAnimationFrame(animate);
-    }
+    const loop = GameBox.loop(step, draw);
 
     function pointerDown(event) {
         event.preventDefault();
 
-        const point = getMousePosition(event);
-        startAim(point);
+        if (aiming) return;
+
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (error) {}
+
+        startAim(GameBox.point(canvas, event), event.pointerId);
     }
 
     function pointerMove(event) {
-        if (!aiming) {
+        if (!aiming || event.pointerId !== aimPointer) {
             return;
         }
 
         event.preventDefault();
 
-        aimPoint = getMousePosition(event);
-        updateAim();
+        updateAim(GameBox.point(canvas, event));
     }
 
     function pointerUp(event) {
-        if (!aiming) {
+        if (!aiming || event.pointerId !== aimPointer) {
             return;
         }
 
         event.preventDefault();
         releaseAim();
+    }
+
+    function pointerCancel(event) {
+        if (event.pointerId !== aimPointer) return;
+
+        aiming = false;
+        aimPointer = null;
+        aimStart = null;
+        aimPoint = null;
+        shotPower = 0;
+
+        updateUI();
+        draw();
     }
 
     canvas.addEventListener(
@@ -615,7 +713,7 @@ window.createBilliards = function(root) {
 
     canvas.addEventListener(
         "pointercancel",
-        pointerUp
+        pointerCancel
     );
 
     restartButton.addEventListener(
@@ -626,33 +724,6 @@ window.createBilliards = function(root) {
     reset();
 
     return function cleanup() {
-        if (animationId) {
-            cancelAnimationFrame(animationId);
-        }
-
-        canvas.removeEventListener(
-            "pointerdown",
-            pointerDown
-        );
-
-        canvas.removeEventListener(
-            "pointermove",
-            pointerMove
-        );
-
-        canvas.removeEventListener(
-            "pointerup",
-            pointerUp
-        );
-
-        canvas.removeEventListener(
-            "pointercancel",
-            pointerUp
-        );
-
-        restartButton.removeEventListener(
-            "click",
-            reset
-        );
+        loop.stop();
     };
 };

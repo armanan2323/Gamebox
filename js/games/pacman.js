@@ -85,14 +85,28 @@ window.createPacman = function(root) {
     let dots;
     let score;
     let lives;
+    let level;
     let gameOver;
     let timer;
+    let tick;
+    let frightened;
+    let ghostCombo;
 
     let nextDirection = { x: 0, y: 0 };
     let direction = { x: 0, y: 0 };
+    let facing = { x: 1, y: 0 };
 
     let touchStartX = 0;
     let touchStartY = 0;
+
+    const START = { x: 10, y: 16 };
+
+    const GHOST_STARTS = [
+        { x: 9, y: 10, color: "#e53935", direction: { x: -1, y: 0 } },
+        { x: 11, y: 10, color: "#f28bd2", direction: { x: 1, y: 0 } },
+        { x: 7, y: 10, color: "#40bcd8", direction: { x: 0, y: -1 } },
+        { x: 10, y: 8, color: "#f4a742", direction: { x: 1, y: 0 } }
+    ];
 
     function createDots() {
         dots = new Set();
@@ -108,67 +122,60 @@ window.createPacman = function(root) {
         }
     }
 
+    function resetPositions() {
+        pacman = { ...START };
+
+        direction = { x: 0, y: 0 };
+        nextDirection = { x: 0, y: 0 };
+        facing = { x: 1, y: 0 };
+
+        ghosts = GHOST_STARTS.map(ghost => ({
+            ...ghost,
+            direction: { ...ghost.direction },
+            eaten: false
+        }));
+
+        frightened = 0;
+    }
+
     function reset() {
         clearInterval(timer);
 
         score = 0;
         lives = 3;
+        level = 1;
+        tick = 0;
         gameOver = false;
 
         scoreElement.textContent = "0";
         livesElement.textContent = "3";
 
         createDots();
-
-        pacman = {
-            x: 10,
-            y: 16
-        };
-
-        direction = { x: 0, y: 0 };
-        nextDirection = { x: 0, y: 0 };
-
-        ghosts = [
-            {
-                x: 9,
-                y: 10,
-                color: "#e53935",
-                direction: { x: 1, y: 0 }
-            },
-            {
-                x: 10,
-                y: 10,
-                color: "#f28bd2",
-                direction: { x: -1, y: 0 }
-            },
-            {
-                x: 11,
-                y: 10,
-                color: "#40bcd8",
-                direction: { x: 0, y: 1 }
-            },
-            {
-                x: 10,
-                y: 9,
-                color: "#f4a742",
-                direction: { x: 1, y: 0 }
-            }
-        ];
+        resetPositions();
 
         statusElement.textContent =
-            "Стрелки или свайпы";
+            "Стрелки, свайпы или кнопки";
 
         draw();
 
-        timer = setInterval(update, 150);
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(update, Math.max(95, 150 - (level - 1) * 10));
+    }
+
+    function wrapX(x) {
+        return (x + COLS) % COLS;
     }
 
     function isWall(x, y) {
-        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) {
+        if (y < 0 || y >= ROWS) {
             return true;
         }
 
-        return map[y][x] === "#";
+        return map[y][wrapX(x)] === "#";
     }
 
     function canMove(x, y, dx, dy) {
@@ -179,7 +186,9 @@ window.createPacman = function(root) {
     }
 
     function update() {
-        if (gameOver) return;
+        if (gameOver || document.hidden) return;
+
+        tick++;
 
         if (
             canMove(
@@ -193,6 +202,7 @@ window.createPacman = function(root) {
         }
 
         if (
+            (direction.x || direction.y) &&
             canMove(
                 pacman.x,
                 pacman.y,
@@ -200,8 +210,9 @@ window.createPacman = function(root) {
                 direction.y
             )
         ) {
-            pacman.x += direction.x;
+            pacman.x = wrapX(pacman.x + direction.x);
             pacman.y += direction.y;
+            facing = { ...direction };
         }
 
         const dotKey =
@@ -212,24 +223,56 @@ window.createPacman = function(root) {
 
             if (map[pacman.y][pacman.x] === "o") {
                 score += 50;
+                frightened = Math.max(20, 45 - level * 4);
+                ghostCombo = 0;
+
+                ghosts.forEach(ghost => {
+                    ghost.eaten = false;
+                    ghost.direction = {
+                        x: -ghost.direction.x,
+                        y: -ghost.direction.y
+                    };
+                });
+
+                GameBox.sound("power");
             } else {
                 score += 10;
+
+                if (tick % 2 === 0) GameBox.sound("tick");
             }
 
             scoreElement.textContent = score;
         }
 
+        // Проверяем столкновение до и после хода призраков,
+        // чтобы Pac-Man не «проходил сквозь» встречного призрака.
+        if (checkGhostCollision()) {
+            draw();
+            return;
+        }
+
+        if (frightened > 0) {
+            frightened--;
+        }
+
         updateGhosts();
-        checkGhostCollision();
+
+        if (checkGhostCollision()) {
+            draw();
+            return;
+        }
 
         if (dots.size === 0) {
+            level++;
+
             statusElement.textContent =
-                "Уровень пройден!";
+                `Уровень ${level}!`;
+
+            GameBox.sound("win");
 
             createDots();
-
-            pacman.x = 10;
-            pacman.y = 16;
+            resetPositions();
+            startTimer();
         }
 
         draw();
@@ -237,6 +280,9 @@ window.createPacman = function(root) {
 
     function updateGhosts() {
         ghosts.forEach(ghost => {
+            // Испуганные призраки двигаются в два раза медленнее.
+            if (frightened > 0 && !ghost.eaten && tick % 2) return;
+
             const options = [
                 { x: 1, y: 0 },
                 { x: -1, y: 0 },
@@ -279,44 +325,26 @@ window.createPacman = function(root) {
                 )
             ];
 
-            if (Math.random() < 0.55) {
-                best = available.reduce(
-                    (current, option) => {
-                        const currentDistance =
-                            Math.abs(
-                                ghost.x +
-                                    current.x -
-                                    pacman.x
-                            ) +
-                            Math.abs(
-                                ghost.y +
-                                    current.y -
-                                    pacman.y
-                            );
+            const scared = frightened > 0 && !ghost.eaten;
+            const chase = Math.min(0.8, 0.5 + level * 0.05);
 
-                        const optionDistance =
-                            Math.abs(
-                                ghost.x +
-                                    option.x -
-                                    pacman.x
-                            ) +
-                            Math.abs(
-                                ghost.y +
-                                    option.y -
-                                    pacman.y
-                            );
+            if (Math.random() < chase) {
+                const distance = option =>
+                    Math.abs(ghost.x + option.x - pacman.x) +
+                    Math.abs(ghost.y + option.y - pacman.y);
 
-                        return optionDistance <
-                            currentDistance
-                            ? option
-                            : current;
-                    }
-                );
+                best = available.reduce((current, option) => {
+                    const better = scared
+                        ? distance(option) > distance(current)
+                        : distance(option) < distance(current);
+
+                    return better ? option : current;
+                });
             }
 
             ghost.direction = best;
 
-            ghost.x += best.x;
+            ghost.x = wrapX(ghost.x + best.x);
             ghost.y += best.y;
         });
     }
@@ -324,33 +352,63 @@ window.createPacman = function(root) {
     function checkGhostCollision() {
         for (const ghost of ghosts) {
             if (
-                ghost.x === pacman.x &&
-                ghost.y === pacman.y
+                ghost.x !== pacman.x ||
+                ghost.y !== pacman.y
             ) {
-                lives--;
-
-                livesElement.textContent =
-                    lives;
-
-                if (lives <= 0) {
-                    gameOver = true;
-                    clearInterval(timer);
-
-                    statusElement.textContent =
-                        "Pac-Man проиграл. Нажми «Заново».";
-
-                    draw();
-
-                    return;
-                }
-
-                pacman.x = 10;
-                pacman.y = 16;
-
-                direction = { x: 0, y: 0 };
-                nextDirection = { x: 0, y: 0 };
+                continue;
             }
+
+            if (frightened > 0 && !ghost.eaten) {
+                ghostCombo++;
+
+                const points = 200 * Math.pow(2, ghostCombo - 1);
+
+                score += points;
+                scoreElement.textContent = score;
+
+                const start = GHOST_STARTS[ghosts.indexOf(ghost)];
+
+                ghost.x = start.x;
+                ghost.y = start.y;
+                ghost.eaten = true;
+
+                statusElement.textContent = `Призрак съеден! +${points}`;
+
+                GameBox.sound("score");
+                continue;
+            }
+
+            lives--;
+
+            livesElement.textContent =
+                lives;
+
+            GameBox.vibrate([80, 40, 80]);
+
+            if (lives <= 0) {
+                gameOver = true;
+                clearInterval(timer);
+
+                statusElement.textContent =
+                    `Pac-Man проиграл. Счёт: ${score}. Нажми «Заново».`;
+
+                GameBox.sound("lose");
+                GameBox.submit(score);
+
+                return true;
+            }
+
+            GameBox.sound("explode");
+
+            statusElement.textContent =
+                `Осталось жизней: ${lives}`;
+
+            resetPositions();
+
+            return true;
         }
+
+        return false;
     }
 
     function draw() {
@@ -362,13 +420,14 @@ window.createPacman = function(root) {
             canvas.height
         );
 
+        ctx.strokeStyle = "#204fca";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
         for (let row = 0; row < ROWS; row++) {
             for (let col = 0; col < COLS; col++) {
                 if (map[row][col] === "#") {
-                    ctx.strokeStyle = "#204fca";
-                    ctx.lineWidth = 2;
-
-                    ctx.strokeRect(
+                    ctx.rect(
                         col * TILE + 2,
                         row * TILE + 2,
                         TILE - 4,
@@ -377,6 +436,8 @@ window.createPacman = function(root) {
                 }
             }
         }
+
+        ctx.stroke();
 
         dots.forEach(key => {
             const [row, col] =
@@ -410,6 +471,9 @@ window.createPacman = function(root) {
         const py =
             pacman.y * TILE + TILE / 2;
 
+        const angle = Math.atan2(facing.y, facing.x);
+        const mouth = tick % 2 ? 0.25 : 0.08;
+
         ctx.fillStyle = "#ffd92f";
 
         ctx.beginPath();
@@ -418,12 +482,22 @@ window.createPacman = function(root) {
             px,
             py,
             8,
-            0.25 * Math.PI,
-            1.75 * Math.PI
+            angle + mouth * Math.PI,
+            angle + (2 - mouth) * Math.PI
         );
 
         ctx.lineTo(px, py);
         ctx.fill();
+
+        if (gameOver) {
+            ctx.fillStyle = "rgba(0, 0, 0, .6)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 28px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+        }
     }
 
     function drawGhost(ghost) {
@@ -433,7 +507,11 @@ window.createPacman = function(root) {
         const y =
             ghost.y * TILE + TILE / 2;
 
-        ctx.fillStyle = ghost.color;
+        const scared = frightened > 0 && !ghost.eaten;
+
+        ctx.fillStyle = scared
+            ? (frightened < 8 && frightened % 2 ? "#fff" : "#2340d8")
+            : ghost.color;
 
         ctx.beginPath();
 
@@ -474,6 +552,12 @@ window.createPacman = function(root) {
     }
 
     function keyDown(event) {
+        if (gameOver && (event.key === " " || event.key === "Enter")) {
+            event.preventDefault();
+            reset();
+            return;
+        }
+
         if (
             event.key === "ArrowUp" ||
             event.key.toLowerCase() === "w"
@@ -516,6 +600,27 @@ window.createPacman = function(root) {
         event.preventDefault();
     }
 
+    function touchMove(event) {
+        event.preventDefault();
+
+        if (!event.touches.length) return;
+
+        const touch = event.touches[0];
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
+
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            setDirection(dx > 0 ? 1 : -1, 0);
+        } else {
+            setDirection(0, dy > 0 ? 1 : -1);
+        }
+
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    }
+
     function touchEnd(event) {
         if (!event.changedTouches.length) return;
 
@@ -528,8 +633,8 @@ window.createPacman = function(root) {
             touch.clientY - touchStartY;
 
         if (
-            Math.abs(dx) < 25 &&
-            Math.abs(dy) < 25
+            Math.abs(dx) < 22 &&
+            Math.abs(dy) < 22
         ) {
             return;
         }
@@ -544,12 +649,9 @@ window.createPacman = function(root) {
     }
 
     function buttonHandler(button, x, y) {
-        const handler = event => {
-            event.preventDefault();
-            setDirection(x, y);
-        };
+        const handler = () => setDirection(x, y);
 
-        button.addEventListener("pointerdown", handler);
+        GameBox.hold(button, handler);
 
         return handler;
     }
@@ -564,6 +666,12 @@ window.createPacman = function(root) {
     canvas.addEventListener(
         "touchstart",
         touchStart,
+        { passive: false }
+    );
+
+    canvas.addEventListener(
+        "touchmove",
+        touchMove,
         { passive: false }
     );
 
@@ -586,6 +694,7 @@ window.createPacman = function(root) {
         restartButton.removeEventListener("click", reset);
 
         canvas.removeEventListener("touchstart", touchStart);
+        canvas.removeEventListener("touchmove", touchMove);
         canvas.removeEventListener("touchend", touchEnd);
 
         handlers.forEach(([button, handler]) => {

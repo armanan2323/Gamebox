@@ -14,7 +14,7 @@ window.createReactionBattle = function(root) {
 
             <div class="reaction-arena">
                 <div class="reaction-player reaction-player-one">
-                    <span>Игрок 1</span>
+                    <span class="reaction-name-one">Игрок 1</span>
                     <strong class="reaction-score-one">0</strong>
                     <button class="reaction-button reaction-button-one">
                         ЖМИ
@@ -32,7 +32,7 @@ window.createReactionBattle = function(root) {
                 </div>
 
                 <div class="reaction-player reaction-player-two">
-                    <span>Игрок 2</span>
+                    <span class="reaction-name-two">Игрок 2</span>
                     <strong class="reaction-score-two">0</strong>
                     <button class="reaction-button reaction-button-two">
                         ЖМИ
@@ -41,7 +41,7 @@ window.createReactionBattle = function(root) {
             </div>
 
             <p class="game-status reaction-status">
-                Нажмите «Старт», когда будете готовы.
+                Нажмите «Старт». Клавиши: игрок 1 - A, игрок 2 - L. Фальстарт - очко сопернику.
             </p>
 
             <button class="game-button reaction-start">
@@ -85,8 +85,16 @@ window.createReactionBattle = function(root) {
     let round = 1;
 
     let active = false;
+    let waiting = false;
+    let finished = false;
     let targetTime = null;
     let timeout = null;
+
+    const playerOneBox = root.querySelector(".reaction-player-one");
+    const playerTwoBox = root.querySelector(".reaction-player-two");
+
+    root.querySelector(".reaction-name-one").textContent = GameBox.name(1);
+    root.querySelector(".reaction-name-two").textContent = GameBox.name(2);
 
     function reset() {
         clearTimeout(timeout);
@@ -95,6 +103,11 @@ window.createReactionBattle = function(root) {
         scoreTwo = 0;
         round = 1;
         active = false;
+        waiting = false;
+        finished = false;
+
+        playerOneBox.classList.remove("winner");
+        playerTwoBox.classList.remove("winner");
 
         scoreOneElement.textContent = "0";
         scoreTwoElement.textContent = "0";
@@ -107,7 +120,7 @@ window.createReactionBattle = function(root) {
             "3";
 
         statusElement.textContent =
-            "Нажмите «Старт», когда будете готовы.";
+            "Нажмите «Старт». Клавиши: игрок 1 - A, игрок 2 - L. Фальстарт - очко сопернику.";
 
         buttonOne.disabled = true;
         buttonTwo.disabled = true;
@@ -116,26 +129,34 @@ window.createReactionBattle = function(root) {
     }
 
     function startRound() {
+        if (finished) return;
+
         clearTimeout(timeout);
 
         active = false;
+        waiting = false;
         targetTime = null;
 
         buttonOne.disabled = true;
         buttonTwo.disabled = true;
+        startButton.disabled = true;
 
         messageElement.textContent =
             "Приготовьтесь";
 
+        statusElement.textContent = `Раунд ${round}. До 5 побед.`;
+
         let count = 3;
 
         timerElement.textContent = count;
+        GameBox.sound("tick");
 
         const countdown = () => {
             count--;
 
             if (count > 0) {
                 timerElement.textContent = count;
+                GameBox.sound("tick");
 
                 timeout = setTimeout(
                     countdown,
@@ -145,10 +166,15 @@ window.createReactionBattle = function(root) {
                 return;
             }
 
-            timerElement.textContent = "!";
+            // Ждём случайное время. Кнопки уже активны - за фальстарт штраф.
+            timerElement.textContent = "…";
 
             messageElement.textContent =
-                "ЖМИ!";
+                "Ждите...";
+
+            waiting = true;
+            buttonOne.disabled = false;
+            buttonTwo.disabled = false;
 
             const delay =
                 600 +
@@ -167,21 +193,58 @@ window.createReactionBattle = function(root) {
     }
 
     function activate() {
+        waiting = false;
         active = true;
         targetTime = performance.now();
 
-        buttonOne.disabled = false;
-        buttonTwo.disabled = false;
+        timerElement.textContent = "!";
+        messageElement.textContent = "ЖМИ!";
+
+        GameBox.sound("go");
 
         statusElement.textContent =
             "Кто быстрее нажмёт?";
     }
 
-    function press(player) {
-        if (!active) {
-            statusElement.textContent =
-                "Слишком рано!";
+    function addPoint(player) {
+        if (player === 1) {
+            scoreOne++;
+            scoreOneElement.textContent = scoreOne;
+        } else {
+            scoreTwo++;
+            scoreTwoElement.textContent = scoreTwo;
+        }
+    }
 
+    function press(player) {
+        if (finished) return;
+
+        if (waiting) {
+            // Фальстарт: очко получает соперник.
+            clearTimeout(timeout);
+            waiting = false;
+
+            buttonOne.disabled = true;
+            buttonTwo.disabled = true;
+
+            const other = player === 1 ? 2 : 1;
+
+            addPoint(other);
+
+            statusElement.textContent =
+                `Фальстарт! ${GameBox.name(player)} нажал раньше. Очко - ${GameBox.name(other)}.`;
+
+            messageElement.textContent = "Рано!";
+            timerElement.textContent = "✕";
+
+            GameBox.sound("error");
+            GameBox.vibrate(80);
+
+            nextRound();
+            return;
+        }
+
+        if (!active) {
             return;
         }
 
@@ -196,35 +259,37 @@ window.createReactionBattle = function(root) {
         buttonOne.disabled = true;
         buttonTwo.disabled = true;
 
-        if (player === 1) {
-            scoreOne++;
-            scoreOneElement.textContent =
-                scoreOne;
+        addPoint(player);
 
-            statusElement.textContent =
-                `Игрок 1: ${reaction} мс`;
-        } else {
-            scoreTwo++;
-            scoreTwoElement.textContent =
-                scoreTwo;
+        statusElement.textContent =
+            `${GameBox.name(player)}: ${reaction} мс`;
 
-            statusElement.textContent =
-                `Игрок 2: ${reaction} мс`;
-        }
+        GameBox.sound("score");
 
+        nextRound();
+    }
+
+    function nextRound() {
         if (
             scoreOne >= 5 ||
             scoreTwo >= 5
         ) {
-            const winner =
-                scoreOne > scoreTwo
-                    ? "Игрок 1"
-                    : "Игрок 2";
+            const winnerNumber = scoreOne > scoreTwo ? 1 : 2;
+            const winner = GameBox.name(winnerNumber);
+
+            finished = true;
 
             messageElement.textContent =
                 `${winner} победил!`;
 
+            (winnerNumber === 1 ? playerOneBox : playerTwoBox)
+                .classList.add("winner");
+
             startButton.disabled = true;
+
+            GameBox.sound("win");
+            GameBox.vibrate(150);
+            GameBox.win(winner);
 
             return;
         }
@@ -253,20 +318,31 @@ window.createReactionBattle = function(root) {
         reset
     );
 
-    buttonOne.addEventListener(
-        "click",
-        () => press(1)
-    );
+    // pointerdown вместо click: оба игрока могут жать одновременно (мультитач)
+    // и нет задержки нажатия на телефоне.
+    [[buttonOne, 1], [buttonTwo, 2]].forEach(([button, player]) => {
+        button.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            press(player);
+        });
 
-    buttonTwo.addEventListener(
-        "click",
-        () => press(2)
-    );
+        button.addEventListener("contextmenu", event => event.preventDefault());
+    });
+
+    function keydown(event) {
+        if (event.repeat) return;
+
+        if (event.code === "KeyA") press(1);
+        if (event.code === "KeyL") press(2);
+    }
+
+    document.addEventListener("keydown", keydown);
 
     reset();
 
     return function cleanup() {
         clearTimeout(timeout);
+        document.removeEventListener("keydown", keydown);
 
         startButton.removeEventListener(
             "click",

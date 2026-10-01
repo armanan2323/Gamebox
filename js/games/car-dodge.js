@@ -18,7 +18,7 @@ window.createCarDodge = function(root) {
             ></canvas>
 
             <p class="game-status car-status">
-                ← → или A / D
+                ← → или A / D. На телефоне - веди пальцем по дороге.
             </p>
 
             <div class="mobile-game-controls">
@@ -40,6 +40,8 @@ window.createCarDodge = function(root) {
 
     const ROAD_LEFT = 45;
     const ROAD_RIGHT = 315;
+    const LANES = 4;
+    const LANE_WIDTH = (ROAD_RIGHT - ROAD_LEFT) / LANES;
 
     const player = {
         x: 160,
@@ -52,8 +54,9 @@ window.createCarDodge = function(root) {
     let enemies = [];
     let score = 0;
     let running = true;
-    let animationId;
     let spawnTimer = 0;
+    let roadOffset = 0;
+    let targetX = null;
 
     const keys = {
         left: false,
@@ -61,53 +64,79 @@ window.createCarDodge = function(root) {
     };
 
     function reset() {
-        if (animationId) {
-            cancelAnimationFrame(animationId);
-        }
+        loop.stop();
 
-        player.x = 160;
+        player.x = laneX(1);
         enemies = [];
         score = 0;
         spawnTimer = 0;
+        roadOffset = 0;
+        targetX = null;
         running = true;
 
         scoreElement.textContent = "0";
         statusElement.textContent =
-            "← → или A / D";
+            "← → или A / D. На телефоне - веди пальцем по дороге.";
 
-        loop();
+        loop.start();
+    }
+
+    function laneX(lane) {
+        return ROAD_LEFT + LANE_WIDTH * lane + (LANE_WIDTH - player.width) / 2;
+    }
+
+    function roadSpeed() {
+        return 3 + Math.min(score / 25, 4);
     }
 
     function spawnEnemy() {
-        const lanes = [75, 135, 195, 255];
+        // Не перекрываем все полосы сразу: всегда остаётся проезд.
+        const blocked = new Set(
+            enemies
+                .filter(enemy => enemy.y < 120)
+                .map(enemy => enemy.lane)
+        );
+
+        const free = [];
+
+        for (let lane = 0; lane < LANES; lane++) {
+            if (!blocked.has(lane)) free.push(lane);
+        }
+
+        if (free.length <= 1) return;
 
         const lane =
-            lanes[
-                Math.floor(
-                    Math.random() * lanes.length
-                )
-            ];
+            free[Math.floor(Math.random() * free.length)];
 
         enemies.push({
-            x: lane,
+            lane,
+            x: laneX(lane),
             y: -80,
             width: 40,
             height: 70,
-            speed: 3 + Math.min(score / 250, 3),
             color:
-                Math.random() > 0.5
-                    ? "#e53935"
-                    : "#4d7cff"
+                ["#e53935", "#4d7cff", "#f4b400", "#9c5de0"][
+                    Math.floor(Math.random() * 4)
+                ]
         });
     }
 
     function update() {
+        if (!running) return false;
+
         if (keys.left) {
             player.x -= player.speed;
+            targetX = null;
         }
 
         if (keys.right) {
             player.x += player.speed;
+            targetX = null;
+        }
+
+        if (targetX !== null) {
+            const diff = targetX - player.x;
+            player.x += Math.max(-player.speed * 1.4, Math.min(player.speed * 1.4, diff));
         }
 
         player.x = Math.max(
@@ -118,31 +147,46 @@ window.createCarDodge = function(root) {
             )
         );
 
+        const speed = roadSpeed();
+
+        roadOffset = (roadOffset + speed) % 50;
+
         spawnTimer++;
 
-        if (spawnTimer > Math.max(35, 75 - score / 8)) {
+        if (spawnTimer > Math.max(30, 70 - score)) {
             spawnEnemy();
             spawnTimer = 0;
         }
 
         enemies.forEach(enemy => {
-            enemy.y += enemy.speed;
+            enemy.y += speed;
         });
 
         enemies = enemies.filter(enemy => {
             if (enemy.y > canvas.height) {
                 score++;
                 scoreElement.textContent = score;
+
+                if (score % 10 === 0) GameBox.sound("score");
+
                 return false;
             }
 
             return true;
         });
 
+        // Небольшой запас, чтобы касание краем не считалось аварией.
+        const hitbox = {
+            x: player.x + 4,
+            y: player.y + 4,
+            width: player.width - 8,
+            height: player.height - 8
+        };
+
         for (const enemy of enemies) {
-            if (collision(player, enemy)) {
+            if (collision(hitbox, enemy)) {
                 gameOver();
-                return;
+                return false;
             }
         }
     }
@@ -160,9 +204,14 @@ window.createCarDodge = function(root) {
         running = false;
 
         statusElement.textContent =
-            "Авария! Нажми «Заново».";
+            `Авария! Счёт: ${score}. Нажми «Заново» или пробел.`;
+
+        GameBox.sound("explode");
+        GameBox.vibrate(200);
+        GameBox.submit(score);
 
         draw();
+        loop.stop();
     }
 
     function draw() {
@@ -186,23 +235,20 @@ window.createCarDodge = function(root) {
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 3;
         ctx.setLineDash([25, 25]);
+        ctx.lineDashOffset = -roadOffset;
 
         ctx.beginPath();
-        ctx.moveTo(105, 0);
-        ctx.lineTo(105, canvas.height);
-        ctx.stroke();
 
-        ctx.beginPath();
-        ctx.moveTo(165, 0);
-        ctx.lineTo(165, canvas.height);
-        ctx.stroke();
+        for (let lane = 1; lane < LANES; lane++) {
+            const x = ROAD_LEFT + LANE_WIDTH * lane;
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+        }
 
-        ctx.beginPath();
-        ctx.moveTo(225, 0);
-        ctx.lineTo(225, canvas.height);
         ctx.stroke();
 
         ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
 
         drawCar(
             player.x,
@@ -227,13 +273,13 @@ window.createCarDodge = function(root) {
         ctx.fillStyle = color;
 
         ctx.beginPath();
-        ctx.roundRect(
-            x,
-            y,
-            width,
-            height,
-            8
-        );
+
+        if (ctx.roundRect) {
+            ctx.roundRect(x, y, width, height, 8);
+        } else {
+            ctx.rect(x, y, width, height);
+        }
+
         ctx.fill();
 
         ctx.fillStyle = "#111";
@@ -264,6 +310,12 @@ window.createCarDodge = function(root) {
 
     function keyDown(event) {
         const key = event.key.toLowerCase();
+
+        if (!running && (key === " " || key === "enter")) {
+            event.preventDefault();
+            reset();
+            return;
+        }
 
         if (
             key === "a" ||
@@ -303,42 +355,70 @@ window.createCarDodge = function(root) {
     }
 
     function mobileButton(button, key) {
-        const start = event => {
-            event.preventDefault();
-            keys[key] = true;
-        };
-
-        const stop = event => {
-            event.preventDefault();
-            keys[key] = false;
-        };
-
-        button.addEventListener("pointerdown", start);
-        button.addEventListener("pointerup", stop);
-        button.addEventListener("pointercancel", stop);
-        button.addEventListener("pointerleave", stop);
-
-        return { start, stop };
+        GameBox.hold(
+            button,
+            () => {
+                keys[key] = true;
+            },
+            () => {
+                keys[key] = false;
+            }
+        );
     }
 
-    const leftHandlers =
-        mobileButton(leftButton, "left");
+    mobileButton(leftButton, "left");
+    mobileButton(rightButton, "right");
 
-    const rightHandlers =
-        mobileButton(rightButton, "right");
+    // Управление пальцем: машина едет к точке касания.
+    function steer(event) {
+        if (!running) return;
 
-    function loop() {
+        const point = GameBox.point(canvas, event);
+
+        targetX = Math.max(
+            ROAD_LEFT + 10,
+            Math.min(ROAD_RIGHT - player.width - 10, point.x - player.width / 2)
+        );
+    }
+
+    function pointerDown(event) {
+        event.preventDefault();
+
         if (!running) {
-            draw();
+            reset();
             return;
         }
 
-        update();
-        draw();
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (error) {}
 
-        animationId =
-            requestAnimationFrame(loop);
+        steer(event);
     }
+
+    function pointerMove(event) {
+        if (event.buttons || event.pointerType === "touch") {
+            steer(event);
+        }
+    }
+
+    function pointerUp() {
+        targetX = null;
+    }
+
+    canvas.addEventListener("pointerdown", pointerDown);
+    canvas.addEventListener("pointermove", pointerMove);
+    canvas.addEventListener("pointerup", pointerUp);
+    canvas.addEventListener("pointercancel", pointerUp);
+
+    const loop = GameBox.loop(update, draw);
+
+    function blur() {
+        keys.left = false;
+        keys.right = false;
+    }
+
+    window.addEventListener("blur", blur);
 
     document.addEventListener("keydown", keyDown);
     document.addEventListener("keyup", keyUp);
@@ -348,51 +428,12 @@ window.createCarDodge = function(root) {
     reset();
 
     return function cleanup() {
-        cancelAnimationFrame(animationId);
+        loop.stop();
 
         document.removeEventListener("keydown", keyDown);
         document.removeEventListener("keyup", keyUp);
+        window.removeEventListener("blur", blur);
 
         restartButton.removeEventListener("click", reset);
-
-        leftButton.removeEventListener(
-            "pointerdown",
-            leftHandlers.start
-        );
-
-        leftButton.removeEventListener(
-            "pointerup",
-            leftHandlers.stop
-        );
-
-        leftButton.removeEventListener(
-            "pointercancel",
-            leftHandlers.stop
-        );
-
-        leftButton.removeEventListener(
-            "pointerleave",
-            leftHandlers.stop
-        );
-
-        rightButton.removeEventListener(
-            "pointerdown",
-            rightHandlers.start
-        );
-
-        rightButton.removeEventListener(
-            "pointerup",
-            rightHandlers.stop
-        );
-
-        rightButton.removeEventListener(
-            "pointercancel",
-            rightHandlers.stop
-        );
-
-        rightButton.removeEventListener(
-            "pointerleave",
-            rightHandlers.stop
-        );
     };
 };

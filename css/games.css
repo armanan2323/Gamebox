@@ -104,18 +104,16 @@
 }
 
 .mobile-controls button:active {
-    background: #3f8f55;
-    border-color: #3f8f55;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .mobile-dpad {
-    width: 180px;
     margin: 14px auto 0;
-    display: grid;
-    grid-template-columns: repeat(3, 56px);
-    grid-template-rows: repeat(2, 50px);
-    gap: 5px;
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
 
 .mobile-dpad button {
@@ -129,7 +127,7 @@
 }
 
 .mobile-dpad button:active {
-    background: #3f8f55;
+    background: var(--accent);
 }
 
 .dpad-up {
@@ -173,8 +171,8 @@
 }
 
 .mobile-game-button:active {
-    background: #3f8f55;
-    border-color: #3f8f55;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .mobile-dpad,
@@ -200,13 +198,18 @@
 }
 
 .mobile-control:active {
-    background: #3f8f55;
-    border-color: #3f8f55;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .mobile-dpad-middle {
     display: flex;
     gap: 8px;
+}
+
+.mobile-dpad .mobile-control {
+    width: 76px;
+    height: 62px;
 }
 
 .snake-wrap {
@@ -270,7 +273,9 @@
 }
 
 .tetris-controls button {
-    min-height: 42px;
+    min-height: 52px;
+    font-size: 22px;
+    touch-action: none;
     border: 1px solid #d8ddd6;
     border-radius: 7px;
     background: #f3f5f2;
@@ -332,7 +337,7 @@
 }
 
 .pong-control-group button:active {
-    background: #3f8f55;
+    background: var(--accent);
 }
 
 .player-two-controls {
@@ -426,6 +431,7 @@
 }
 
 .grid-2048 {
+    touch-action: none;
     width: min(500px, 100%);
     margin: 0 auto;
     padding: 8px;
@@ -734,6 +740,7 @@
 }
 
 .puzzle15-board {
+    touch-action: none;
     width: min(500px, 100%);
     margin: 0 auto;
     padding: 7px;
@@ -784,7 +791,7 @@
 }
 
 .reaction-target.ready {
-    background: #3f8f55;
+    background: var(--accent);
 }
 
 .reaction-arena {
@@ -903,11 +910,11 @@
 }
 
 .math-answer:hover {
-    border-color: #3f8f55;
+    border-color: var(--accent);
 }
 
 .math-answer:active {
-    background: #3f8f55;
+    background: var(--accent);
 }
 
 .math-answer:disabled {
@@ -1360,7 +1367,7 @@
 
 .game-box .mode-button.active {
     background: #1d3322;
-    border-color: #3f8f55;
+    border-color: var(--accent);
     color: #fff;
 }
 
@@ -1402,7 +1409,7 @@
 .billiards-power-fill {
     width: 0;
     height: 100%;
-    background: #3f8f55;
+    background: var(--accent);
     transition: width .05s linear;
 }
 
@@ -1442,4 +1449,346 @@
     .game-box button {
         touch-action: manipulation;
     }
+}
+
+
+/* ---------- Общие улучшения ---------- */
+
+.game-box {
+    border-color: var(--game-border, #222);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+:root[data-theme="light"] .game-box {
+    --game-border: #1c1f1c;
+}
+
+.game-box canvas {
+    -webkit-touch-callout: none;
+}
+
+/* Канвас целиком помещается на экране телефона и сохраняет пропорции
+   (без «полей» по краям - иначе касания попадали бы мимо). */
+.game-canvas,
+.snake-canvas,
+.tetris-canvas,
+.pong-canvas,
+.billiards-canvas,
+.air-hockey-canvas {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 72vh;
+    max-height: 72svh;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.mobile-controls button.pressed,
+.mobile-control.pressed,
+.mobile-game-button.pressed,
+.pong-control-group button.pressed,
+.tetris-controls button.pressed {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+
+.mobile-controls button,
+.mobile-control,
+.mobile-game-button,
+.pong-control-group button,
+.tetris-controls button,
+.reaction-button,
+.math-answer {
+    -webkit-touch-callout: none;
+}
+
+.game-box .game-button:disabled,
+.game-box .battleship-ready:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+.game-toolbar {
+    flex-wrap: wrap;
+}
+
+.mine-cell.n1 { color: #3b7ddd; }
+.mine-cell.n2 { color: #2f8f4e; }
+.mine-cell.n3 { color: #d43b3b; }
+.mine-cell.n4 { color: #6a3fc4; }
+.mine-cell.n5 { color: #a8502a; }
+.mine-cell.n6 { color: #138f8f; }
+.mine-cell.n7 { color: #222; }
+.mine-cell.n8 { color: #777; }
+
+.mine-cell.exploded {
+    background: #e05252 !important;
+}
+
+.minesweeper-board,
+.memory-board,
+.ttt-board,
+.sudoku-board,
+.chess-board,
+.connect-four-board,
+.battleship-board,
+.battleship-target-board {
+    touch-action: manipulation;
+}
+
+.memory-card {
+    transition: transform .15s, background .15s;
+}
+
+.memory-card.open {
+    transform: rotateY(0deg) scale(1.02);
+}
+
+.memory-card.matched {
+    opacity: .75;
+}
+
+.ttt-cell.win,
+.connect-four-cell.win {
+    box-shadow: 0 0 0 3px var(--accent), inset 0 0 0 2px var(--accent);
+}
+
+.ttt-cell.x {
+    color: #3b7ddd;
+}
+
+.ttt-cell.o {
+    color: #e05252;
+}
+
+.connect-four-cell:hover:not(.red):not(.yellow) {
+    background: #1b1f24;
+}
+
+.sudoku-cell.given {
+    color: #111;
+    font-weight: 700;
+}
+
+.sudoku-cell.user {
+    color: var(--accent-strong, #2f7343);
+}
+
+.sudoku-cell.error {
+    color: #d43b3b;
+    background: #fdecec;
+}
+
+.sudoku-cell.same {
+    background: #f1f5ef;
+}
+
+.sudoku-cell.selected {
+    background: #dbe8d6;
+}
+
+.number-pad button {
+    min-height: 48px;
+    font-size: 19px;
+}
+
+.chess-cell.move::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 26%;
+    height: 26%;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .25);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.chess-cell.capture {
+    box-shadow: inset 0 0 0 4px rgba(200, 50, 50, .6);
+}
+
+.chess-cell.check {
+    background: #e57373 !important;
+}
+
+.chess-cell.last {
+    background: #d8d38a;
+}
+
+.chess-cell.dark.last {
+    background: #b5ae5e;
+}
+
+.chess-cell.selected {
+    box-shadow: inset 0 0 0 4px var(--accent);
+}
+
+.battle-cell.sunk {
+    background: #7a1f1d;
+}
+
+.battleship-random {
+    padding: 9px 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+}
+
+.battleship-cover-box strong {
+    color: #fff;
+}
+
+.pong-mobile-controls.single {
+    justify-content: flex-start;
+}
+
+.pong-mobile-controls.single .player-two-controls {
+    display: none;
+}
+
+.hockey-mode-switch,
+.pong-game .mode-switch {
+    flex-wrap: wrap;
+}
+
+.reaction-target {
+    touch-action: manipulation;
+}
+
+.reaction-target.early {
+    background: #b73535;
+}
+
+.reaction-player.winner {
+    box-shadow: 0 0 0 3px var(--accent);
+}
+
+.quick-math-question {
+    margin: 28px 0;
+}
+
+.math-answer.correct {
+    background: #2f8f4e !important;
+    border-color: #2f8f4e !important;
+}
+
+.math-answer.wrong {
+    background: #b73535 !important;
+    border-color: #b73535 !important;
+}
+
+.tile-2048 {
+    transition: background .1s;
+}
+
+.tile-2048.new {
+    animation: tile-pop .16s ease-out;
+}
+
+@keyframes tile-pop {
+    from {
+        transform: scale(.6);
+    }
+}
+
+.tile-2048[data-value="4096"],
+.tile-2048[data-value="8192"] {
+    background: #5f7a5b;
+    color: #fff;
+}
+
+.tile-2048[data-value="1024"],
+.tile-2048[data-value="2048"],
+.tile-2048[data-value="4096"],
+.tile-2048[data-value="8192"] {
+    font-size: clamp(16px, 4.5vw, 30px);
+}
+
+@media (max-width: 700px) {
+    .game-canvas,
+    .snake-canvas,
+    .tetris-canvas,
+    .air-hockey-canvas {
+        max-height: 62vh;
+        max-height: 62svh;
+    }
+
+    .tetris-layout {
+        gap: 12px;
+    }
+
+    .tetris-side {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 8px;
+    }
+
+    .tetris-next {
+        width: 72px;
+        height: 72px;
+        margin: 0;
+    }
+
+    .reaction-arena {
+        margin: 12px 0;
+    }
+}
+
+@media (max-width: 420px) {
+    .reaction-center {
+        width: 58px;
+    }
+
+    .reaction-button {
+        width: 100%;
+        max-width: 110px;
+    }
+
+    .reaction-player {
+        padding: 0 6px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .game-box button:hover {
+        filter: none;
+    }
+}
+
+/* Компактные стрелки (аэрохоккей: по крестовине на игрока) */
+.hockey-controls {
+    justify-content: space-around;
+    gap: 8px;
+}
+
+.mobile-dpad.compact {
+    margin-top: 0;
+    gap: 5px;
+}
+
+.mobile-dpad.compact .mobile-dpad-middle {
+    gap: 5px;
+}
+
+.mobile-dpad.compact .mobile-control {
+    width: 48px;
+    height: 44px;
+    font-size: 22px;
+}
+
+.hockey-dpad-blue .mobile-control {
+    border-color: #3f8ff5;
+}
+
+.hockey-dpad-red .mobile-control {
+    border-color: #e54848;
 }

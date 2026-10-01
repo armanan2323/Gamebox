@@ -81,26 +81,50 @@ window.createTicTacToe = function(root) {
         statusElement.textContent =
             mode === "ai"
                 ? "Твой ход"
-                : "Ход игрока X";
+                : `Ход: ${GameBox.name(1)} (X)`;
 
         render();
     }
 
+    const combinations = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
+    ];
+
+    const cells = Array.from({ length: 9 }, (_, index) => {
+        const cell = document.createElement("button");
+
+        cell.className = "ttt-cell";
+
+        cell.addEventListener("click", () => {
+            makeMove(index);
+        });
+
+        boardElement.appendChild(cell);
+
+        return cell;
+    });
+
     function render() {
-        boardElement.innerHTML = "";
+        const line = gameOver
+            ? combinations.find(combination =>
+                board[combination[0]] &&
+                combination.every(index => board[index] === board[combination[0]])
+            )
+            : null;
 
         board.forEach(
             (value, index) => {
-                const cell =
-                    document.createElement(
-                        "button"
-                    );
+                const cell = cells[index];
 
-                cell.className =
-                    "ttt-cell";
-
-                cell.textContent =
-                    value;
+                cell.textContent = value;
+                cell.className = "ttt-cell";
 
                 if (value) {
                     cell.classList.add(
@@ -108,16 +132,9 @@ window.createTicTacToe = function(root) {
                     );
                 }
 
-                cell.addEventListener(
-                    "click",
-                    () => {
-                        makeMove(index);
-                    }
-                );
-
-                boardElement.appendChild(
-                    cell
-                );
+                if (line && line.includes(index)) {
+                    cell.classList.add("win");
+                }
             }
         );
 
@@ -141,6 +158,8 @@ window.createTicTacToe = function(root) {
 
         board[index] =
             currentPlayer;
+
+        GameBox.sound("place");
 
         render();
 
@@ -171,7 +190,7 @@ window.createTicTacToe = function(root) {
             );
         } else {
             statusElement.textContent =
-                `Ход игрока ${currentPlayer}`;
+                `Ход: ${GameBox.name(currentPlayer === "X" ? 1 : 2)} (${currentPlayer})`;
         }
     }
 
@@ -205,6 +224,8 @@ window.createTicTacToe = function(root) {
         }
 
         board[move] = "O";
+
+        GameBox.sound("move");
 
         render();
 
@@ -318,17 +339,6 @@ window.createTicTacToe = function(root) {
     }
 
     function hasWinner(player) {
-        const combinations = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
-        ];
-
         return combinations.some(
             combination =>
                 combination.every(
@@ -345,12 +355,24 @@ window.createTicTacToe = function(root) {
         ) {
             gameOver = true;
 
+            const winnerNumber = currentPlayer === "X" ? 1 : 2;
+
             statusElement.textContent =
                 mode === "ai"
                     ? currentPlayer === "X"
                         ? "Ты победил!"
                         : "ИИ победил!"
-                    : `Игрок ${currentPlayer} победил!`;
+                    : `${GameBox.name(winnerNumber)} (${currentPlayer}) победил!`;
+
+            if (mode === "ai") {
+                GameBox.win(currentPlayer === "X" ? GameBox.name(1) : GameBox.aiName);
+                GameBox.sound(currentPlayer === "X" ? "win" : "lose");
+            } else {
+                GameBox.win(GameBox.name(winnerNumber));
+                GameBox.sound("win");
+            }
+
+            render();
 
             return true;
         }
@@ -364,6 +386,8 @@ window.createTicTacToe = function(root) {
 
             statusElement.textContent =
                 "Ничья!";
+
+            GameBox.sound("error");
 
             return true;
         }

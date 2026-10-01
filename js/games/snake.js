@@ -44,7 +44,7 @@ window.createSnake = function(root) {
     let snake;
     let food;
     let direction;
-    let nextDirection;
+    let directionQueue;
     let score;
     let timer;
     let gameOver;
@@ -53,7 +53,7 @@ window.createSnake = function(root) {
     let touchStartY = 0;
 
     function reset() {
-        clearInterval(timer);
+        clearTimeout(timer);
 
         snake = [
             { x: 10, y: 10 },
@@ -62,7 +62,7 @@ window.createSnake = function(root) {
         ];
 
         direction = { x: 1, y: 0 };
-        nextDirection = { x: 1, y: 0 };
+        directionQueue = [];
 
         score = 0;
         gameOver = false;
@@ -74,10 +74,25 @@ window.createSnake = function(root) {
         createFood();
         draw();
 
-        timer = setInterval(update, 110);
+        schedule();
+    }
+
+    function schedule() {
+        clearTimeout(timer);
+
+        timer = setTimeout(() => {
+            update();
+
+            if (!gameOver) schedule();
+        }, Math.max(60, 110 - score * 2));
     }
 
     function createFood() {
+        if (snake.length >= CELLS * CELLS) {
+            food = { x: -1, y: -1 };
+            return;
+        }
+
         do {
             food = {
                 x: Math.floor(Math.random() * CELLS),
@@ -92,28 +107,31 @@ window.createSnake = function(root) {
         );
     }
 
+    // Очередь поворотов: быстрые нажатия (например, ↑ затем ←) не теряются.
     function setDirection(x, y) {
+        if (gameOver) return;
+
+        const last =
+            directionQueue[directionQueue.length - 1] || direction;
+
         if (
-            direction.x === -x &&
-            direction.y === -y
+            (last.x === x && last.y === y) ||
+            (last.x === -x && last.y === -y)
         ) {
             return;
         }
 
-        if (
-            nextDirection.x === -x &&
-            nextDirection.y === -y
-        ) {
-            return;
+        if (directionQueue.length < 3) {
+            directionQueue.push({ x, y });
         }
-
-        nextDirection = { x, y };
     }
 
     function update() {
-        if (gameOver) return;
+        if (gameOver || document.hidden) return;
 
-        direction = { ...nextDirection };
+        if (directionQueue.length) {
+            direction = directionQueue.shift();
+        }
 
         const head = {
             x: snake[0].x + direction.x,
@@ -130,7 +148,14 @@ window.createSnake = function(root) {
             return;
         }
 
-        const hitSelf = snake.some(
+        const eating =
+            head.x === food.x &&
+            head.y === food.y;
+
+        // Хвост в этот ход уходит, поэтому в него можно «въехать».
+        const body = eating ? snake : snake.slice(0, -1);
+
+        const hitSelf = body.some(
             part =>
                 part.x === head.x &&
                 part.y === head.y
@@ -143,13 +168,16 @@ window.createSnake = function(root) {
 
         snake.unshift(head);
 
-        if (
-            head.x === food.x &&
-            head.y === food.y
-        ) {
+        if (eating) {
             score++;
             scoreElement.textContent = score;
+            GameBox.sound("eat");
             createFood();
+
+            if (food.x < 0) {
+                endGame(true);
+                return;
+            }
         } else {
             snake.pop();
         }
@@ -157,12 +185,17 @@ window.createSnake = function(root) {
         draw();
     }
 
-    function endGame() {
+    function endGame(won) {
         gameOver = true;
-        clearInterval(timer);
+        clearTimeout(timer);
 
-        statusElement.textContent =
-            "Игра окончена. Нажми «Заново».";
+        statusElement.textContent = won
+            ? `Победа! Поле заполнено. Счёт: ${score}`
+            : `Игра окончена. Счёт: ${score}. Нажми «Заново» или пробел.`;
+
+        GameBox.sound(won ? "win" : "lose");
+        GameBox.vibrate(won ? 60 : [80, 40, 80]);
+        GameBox.submit(score);
 
         draw();
     }
@@ -174,17 +207,16 @@ window.createSnake = function(root) {
         ctx.strokeStyle = "#111";
         ctx.lineWidth = 1;
 
+        ctx.beginPath();
+
         for (let i = 0; i <= CELLS; i++) {
-            ctx.beginPath();
             ctx.moveTo(i * SIZE, 0);
             ctx.lineTo(i * SIZE, canvas.height);
-            ctx.stroke();
-
-            ctx.beginPath();
             ctx.moveTo(0, i * SIZE);
             ctx.lineTo(canvas.width, i * SIZE);
-            ctx.stroke();
         }
+
+        ctx.stroke();
 
         ctx.fillStyle = "#e53935";
 
@@ -213,6 +245,12 @@ window.createSnake = function(root) {
 
     function keyDown(event) {
         const key = event.key.toLowerCase();
+
+        if (gameOver && (key === " " || key === "enter")) {
+            event.preventDefault();
+            reset();
+            return;
+        }
 
         if (key === "arrowup" || key === "w") {
             setDirection(0, -1);
@@ -246,6 +284,23 @@ window.createSnake = function(root) {
 
     function touchMove(event) {
         event.preventDefault();
+
+        if (!event.touches.length) return;
+
+        const touch = event.touches[0];
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
+
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            setDirection(dx > 0 ? 1 : -1, 0);
+        } else {
+            setDirection(0, dy > 0 ? 1 : -1);
+        }
+
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
     }
 
     function touchEnd(event) {
@@ -257,9 +312,10 @@ window.createSnake = function(root) {
         const dy = touch.clientY - touchStartY;
 
         if (
-            Math.abs(dx) < 25 &&
-            Math.abs(dy) < 25
+            Math.abs(dx) < 22 &&
+            Math.abs(dy) < 22
         ) {
+            if (gameOver) reset();
             return;
         }
 
@@ -273,12 +329,9 @@ window.createSnake = function(root) {
     }
 
     function buttonDirection(button, x, y) {
-        const handler = event => {
-            event.preventDefault();
-            setDirection(x, y);
-        };
+        const handler = () => setDirection(x, y);
 
-        button.addEventListener("pointerdown", handler);
+        GameBox.hold(button, handler);
 
         return handler;
     }
@@ -313,7 +366,7 @@ window.createSnake = function(root) {
     reset();
 
     return function cleanup() {
-        clearInterval(timer);
+        clearTimeout(timer);
 
         document.removeEventListener("keydown", keyDown);
 

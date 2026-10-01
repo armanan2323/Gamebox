@@ -9,7 +9,7 @@ window.createFlappyBird = function(root) {
             <canvas class="game-canvas flappy-canvas" width="600" height="700"></canvas>
 
             <div class="mobile-controls">
-                <button class="flappy-jump">Прыжок</button>
+                <button class="flappy-jump">↑ Прыжок</button>
             </div>
 
             <p class="game-status flappy-status">
@@ -37,6 +37,9 @@ window.createFlappyBird = function(root) {
     let animationId;
     let lastTime;
     let pipeTimer;
+    let deathTime = 0;
+
+    const groundHeight = 35;
 
     const gravity = 1500;
     const jumpPower = -470;
@@ -73,6 +76,9 @@ window.createFlappyBird = function(root) {
 
     function start() {
         if (gameOver) {
+            // Небольшая пауза после проигрыша, чтобы случайный тап не начинал игру сразу.
+            if (performance.now() - deathTime < 600) return;
+
             reset();
         }
 
@@ -96,11 +102,12 @@ window.createFlappyBird = function(root) {
         if (gameOver) return;
 
         bird.velocity = jumpPower;
+        GameBox.sound("jump");
     }
 
     function createPipe() {
         const minTop = 80;
-        const maxTop = height - 180 - pipeGap;
+        const maxTop = height - groundHeight - 120 - pipeGap;
 
         const topHeight =
             minTop + Math.random() * (maxTop - minTop);
@@ -130,6 +137,7 @@ window.createFlappyBird = function(root) {
                 pipe.passed = true;
                 score++;
                 scoreElement.textContent = score;
+                GameBox.sound("score");
             }
         }
 
@@ -137,26 +145,32 @@ window.createFlappyBird = function(root) {
             pipe => pipe.x + pipeWidth > -20
         );
 
-        if (
-            bird.y - birdRadius <= 0 ||
-            bird.y + birdRadius >= height
-        ) {
+        if (bird.y - birdRadius <= 0) {
+            bird.y = birdRadius;
+            bird.velocity = Math.max(0, bird.velocity);
+        }
+
+        if (bird.y + birdRadius >= height - groundHeight) {
+            bird.y = height - groundHeight - birdRadius;
             endGame();
             return;
         }
 
+        // Хитбокс птицы чуть меньше картинки - так честнее.
+        const r = birdRadius - 3;
+
         for (const pipe of pipes) {
             const hitsTop =
-                bird.x + birdRadius > pipe.x &&
-                bird.x - birdRadius < pipe.x + pipeWidth &&
-                bird.y - birdRadius < pipe.top;
+                bird.x + r > pipe.x - 6 &&
+                bird.x - r < pipe.x + pipeWidth + 6 &&
+                bird.y - r < pipe.top;
 
             const bottomY = pipe.top + pipeGap;
 
             const hitsBottom =
-                bird.x + birdRadius > pipe.x &&
-                bird.x - birdRadius < pipe.x + pipeWidth &&
-                bird.y + birdRadius > bottomY;
+                bird.x + r > pipe.x - 6 &&
+                bird.x - r < pipe.x + pipeWidth + 6 &&
+                bird.y + r > bottomY;
 
             if (hitsTop || hitsBottom) {
                 endGame();
@@ -168,9 +182,14 @@ window.createFlappyBird = function(root) {
     function endGame() {
         gameOver = true;
         gameStarted = false;
+        deathTime = performance.now();
 
         statusElement.textContent =
             `Игра окончена. Счёт: ${score}. Нажми кнопку или пробел`;
+
+        GameBox.sound("hit");
+        GameBox.vibrate(150);
+        GameBox.submit(score);
 
         draw();
     }
@@ -180,7 +199,21 @@ window.createFlappyBird = function(root) {
 
         drawBackground();
         drawPipes();
+        drawGround();
         drawBird();
+
+        if (!gameStarted) {
+            ctx.fillStyle = "rgba(0, 0, 0, .35)";
+            ctx.fillRect(0, height / 2 - 50, width, 100);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(
+                gameOver ? `Счёт: ${score} · тап - ещё раз` : "Тап или пробел - старт",
+                width / 2,
+                height / 2 + 10
+            );
+        }
     }
 
     function drawBackground() {
@@ -196,11 +229,14 @@ window.createFlappyBird = function(root) {
 
         ctx.globalAlpha = 1;
 
+    }
+
+    function drawGround() {
         ctx.fillStyle = "#8baa72";
-        ctx.fillRect(0, height - 35, width, 35);
+        ctx.fillRect(0, height - groundHeight, width, groundHeight);
 
         ctx.fillStyle = "#6f9457";
-        ctx.fillRect(0, height - 35, width, 7);
+        ctx.fillRect(0, height - groundHeight, width, 7);
     }
 
     function drawCloud(x, y, size) {
@@ -260,6 +296,7 @@ window.createFlappyBird = function(root) {
                 pipeWidth + 12,
                 24
             );
+
 
             ctx.fillStyle = "#8bc76c";
 
@@ -370,7 +407,10 @@ window.createFlappyBird = function(root) {
 
     canvas.addEventListener("pointerdown", handlePointer);
 
-    restartButton.addEventListener("click", reset);
+    restartButton.addEventListener("click", () => {
+        deathTime = 0;
+        reset();
+    });
 
     reset();
 

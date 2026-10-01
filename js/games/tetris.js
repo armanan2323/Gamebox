@@ -30,6 +30,7 @@ window.createTetris = function(root) {
 
                 <div class="tetris-side">
                     <strong>Следующая</strong>
+                    <span class="tetris-level">Уровень 1</span>
 
                     <canvas
                         class="tetris-next"
@@ -40,7 +41,8 @@ window.createTetris = function(root) {
             </div>
 
             <p class="game-status tetris-status">
-                Стрелки - движение, ↑ - поворот, Space - сброс.
+                Стрелки - движение, ↑ - поворот, Space - сброс, P - пауза.
+                На телефоне: тап - поворот, свайпы - движение.
             </p>
         </div>
     `;
@@ -62,6 +64,9 @@ window.createTetris = function(root) {
 
     const restart =
         root.querySelector(".tetris-restart");
+
+    const levelElement =
+        root.querySelector(".tetris-level");
 
     const controls =
         root.querySelectorAll(".tetris-controls button");
@@ -98,11 +103,23 @@ window.createTetris = function(root) {
         ]
     ];
 
+    const colors = [
+        "#4fc3f7",
+        "#ffd54f",
+        "#ba68c8",
+        "#ff8a65",
+        "#5c8df6",
+        "#81c784",
+        "#e57373"
+    ];
+
     let board;
     let current;
     let next;
     let score;
+    let lines;
     let gameOver;
+    let paused;
     let dropTimer;
     let lastDrop;
 
@@ -113,16 +130,25 @@ window.createTetris = function(root) {
         );
     }
 
+    let bag = [];
+
+    // «Мешок» из 7 фигур: без длинных серий одинаковых фигур.
     function randomPiece() {
-        const shape =
-            pieces[
-                Math.floor(
-                    Math.random() * pieces.length
-                )
-            ];
+        if (!bag.length) {
+            bag = pieces.map((_, index) => index);
+
+            for (let i = bag.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [bag[i], bag[j]] = [bag[j], bag[i]];
+            }
+        }
+
+        const type = bag.pop();
+        const shape = pieces[type];
 
         return {
-            shape: shape.map(row => [...row]),
+            color: type + 1,
+            shape: shape.map(row => row.map(value => value ? type + 1 : 0)),
             x: Math.floor(
                 (COLS - shape[0].length) / 2
             ),
@@ -138,31 +164,51 @@ window.createTetris = function(root) {
         next = randomPiece();
 
         score = 0;
+        lines = 0;
         gameOver = false;
+        paused = false;
 
         scoreElement.textContent = score;
+        levelElement.textContent = "Уровень 1";
         status.textContent =
-            "Стрелки - движение, ↑ - поворот, Space - сброс.";
+            "Стрелки - движение, ↑ - поворот, Space - сброс, P - пауза.";
 
         draw();
 
         lastDrop = Date.now();
 
         dropTimer = setInterval(() => {
-            if (gameOver) return;
+            if (gameOver || paused || document.hidden) {
+                lastDrop = Date.now();
+                return;
+            }
 
-            if (
-                Date.now() - lastDrop >
-                Math.max(
-                    120,
-                    700 - Math.floor(score / 500) * 40
-                )
-            ) {
+            if (Date.now() - lastDrop > dropInterval()) {
                 drop();
 
                 lastDrop = Date.now();
             }
         }, 30);
+    }
+
+    function level() {
+        return Math.floor(lines / 10) + 1;
+    }
+
+    function dropInterval() {
+        return Math.max(90, 750 - (level() - 1) * 65);
+    }
+
+    function togglePause() {
+        if (gameOver) return;
+
+        paused = !paused;
+
+        status.textContent = paused
+            ? "Пауза. Нажми P, чтобы продолжить."
+            : "Игра продолжается.";
+
+        draw();
     }
 
     function collision(piece, offsetX = 0, offsetY = 0, shape = piece.shape) {
@@ -196,18 +242,26 @@ window.createTetris = function(root) {
     function move(dx) {
         if (
             !gameOver &&
+            !paused &&
             !collision(current, dx, 0)
         ) {
             current.x += dx;
+            GameBox.sound("move");
             draw();
         }
     }
 
-    function drop() {
-        if (gameOver) return;
+    function drop(manual) {
+        if (gameOver || paused) return;
 
         if (!collision(current, 0, 1)) {
             current.y++;
+
+            if (manual) {
+                score += 1;
+                scoreElement.textContent = score;
+                lastDrop = Date.now();
+            }
         } else {
             lockPiece();
         }
@@ -216,18 +270,24 @@ window.createTetris = function(root) {
     }
 
     function hardDrop() {
-        if (gameOver) return;
+        if (gameOver || paused) return;
+
+        let distance = 0;
 
         while (!collision(current, 0, 1)) {
             current.y++;
+            distance++;
         }
+
+        score += distance * 2;
+        scoreElement.textContent = score;
 
         lockPiece();
         draw();
     }
 
     function rotate() {
-        if (gameOver) return;
+        if (gameOver || paused) return;
 
         const oldShape = current.shape;
 
@@ -238,6 +298,8 @@ window.createTetris = function(root) {
                         row => row[index]
                     ).reverse()
             );
+
+        const before = current.shape;
 
         if (
             !collision(
@@ -268,12 +330,30 @@ window.createTetris = function(root) {
         ) {
             current.x++;
             current.shape = newShape;
+        } else if (
+            newShape[0].length === 4 &&
+            !collision(current, -2, 0, newShape)
+        ) {
+            current.x -= 2;
+            current.shape = newShape;
+        } else if (
+            newShape[0].length === 4 &&
+            !collision(current, 2, 0, newShape)
+        ) {
+            current.x += 2;
+            current.shape = newShape;
+        }
+
+        if (current.shape !== before) {
+            GameBox.sound("rotate");
         }
 
         draw();
     }
 
     function lockPiece() {
+        let overflow = false;
+
         current.shape.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value) {
@@ -283,17 +363,23 @@ window.createTetris = function(root) {
                     const px =
                         current.x + x;
 
-                    if (
-                        py >= 0 &&
-                        py < ROWS
-                    ) {
-                        board[py][px] = 1;
+                    if (py < 0) {
+                        overflow = true;
+                    } else if (py < ROWS) {
+                        board[py][px] = value;
                     }
                 }
             });
         });
 
-        clearLines();
+        if (!clearLines()) {
+            GameBox.sound("place");
+        }
+
+        if (overflow) {
+            finish();
+            return;
+        }
 
         current = next;
         current.x = Math.floor(
@@ -304,10 +390,18 @@ window.createTetris = function(root) {
         next = randomPiece();
 
         if (collision(current)) {
-            gameOver = true;
-            status.textContent =
-                "Игра окончена. Нажми «Заново».";
+            finish();
         }
+    }
+
+    function finish() {
+        gameOver = true;
+        status.textContent =
+            `Игра окончена. Счёт: ${score}. Нажми «Заново».`;
+
+        GameBox.sound("lose");
+        GameBox.vibrate([80, 40, 80]);
+        GameBox.submit(score);
     }
 
     function clearLines() {
@@ -324,21 +418,50 @@ window.createTetris = function(root) {
         }
 
         if (lines) {
+            const oldLevel = level();
+
             score +=
-                [0, 100, 300, 500, 800][lines];
+                [0, 100, 300, 500, 800][lines] * oldLevel;
+
+            linesCleared(lines);
 
             scoreElement.textContent = score;
+
+            GameBox.sound(lines >= 4 ? "win" : "score");
+            GameBox.vibrate(30);
+
+            if (level() > oldLevel) {
+                status.textContent = `Уровень ${level()}!`;
+            }
+
+            levelElement.textContent = `Уровень ${level()}`;
         }
+
+        return lines;
     }
 
-    function drawCell(context, x, y, size) {
-        context.fillStyle = "#d8ddd7";
+    function linesCleared(count) {
+        lines += count;
+    }
+
+    function drawCell(context, x, y, size, value, alpha = 1) {
+        context.globalAlpha = alpha;
+        context.fillStyle = colors[(value || 1) - 1];
         context.fillRect(
             x * size,
             y * size,
             size - 1,
             size - 1
         );
+
+        context.fillStyle = "rgba(255, 255, 255, .25)";
+        context.fillRect(
+            x * size,
+            y * size,
+            size - 1,
+            Math.max(2, size / 8)
+        );
+        context.globalAlpha = 1;
     }
 
     function draw() {
@@ -357,10 +480,34 @@ window.createTetris = function(root) {
                         ctx,
                         x,
                         y,
-                        SIZE
+                        SIZE,
+                        board[y][x]
                     );
                 }
             }
+        }
+
+        if (!gameOver) {
+            let ghost = 0;
+
+            while (!collision(current, 0, ghost + 1)) {
+                ghost++;
+            }
+
+            current.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        drawCell(
+                            ctx,
+                            current.x + x,
+                            current.y + y + ghost,
+                            SIZE,
+                            value,
+                            0.22
+                        );
+                    }
+                });
+            });
         }
 
         current.shape.forEach((row, y) => {
@@ -370,11 +517,26 @@ window.createTetris = function(root) {
                         ctx,
                         current.x + x,
                         current.y + y,
-                        SIZE
+                        SIZE,
+                        value
                     );
                 }
             });
         });
+
+        if (paused || gameOver) {
+            ctx.fillStyle = "rgba(0, 0, 0, .6)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(
+                paused ? "ПАУЗА" : "КОНЕЦ ИГРЫ",
+                canvas.width / 2,
+                canvas.height / 2
+            );
+        }
 
         nextCtx.fillStyle = "#111411";
         nextCtx.fillRect(
@@ -384,14 +546,18 @@ window.createTetris = function(root) {
             nextCanvas.height
         );
 
+        const offsetX = (5 - next.shape[0].length) / 2;
+        const offsetY = (5 - next.shape.length) / 2;
+
         next.shape.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value) {
                     drawCell(
                         nextCtx,
-                        x + 1,
-                        y + 1,
-                        24
+                        x + offsetX,
+                        y + offsetY,
+                        24,
+                        value
                     );
                 }
             });
@@ -411,25 +577,38 @@ window.createTetris = function(root) {
             event.preventDefault();
         }
 
-        if (event.code === "ArrowLeft") move(-1);
-        if (event.code === "ArrowRight") move(1);
-        if (event.code === "ArrowDown") drop();
-        if (event.code === "ArrowUp") rotate();
+        if (event.code === "ArrowLeft" || event.code === "KeyA") move(-1);
+        if (event.code === "ArrowRight" || event.code === "KeyD") move(1);
+        if (event.code === "ArrowDown" || event.code === "KeyS") drop(true);
+        if (event.code === "ArrowUp" || event.code === "KeyW") rotate();
         if (event.code === "Space") hardDrop();
+        if (event.code === "KeyP" || event.code === "Escape") togglePause();
     }
 
     controls.forEach(button => {
-        button.addEventListener("pointerdown", event => {
-            event.preventDefault();
+        const action = button.dataset.action;
+        const repeat =
+            action === "left" || action === "right" || action === "down";
 
-            const action = button.dataset.action;
-
+        GameBox.hold(button, () => {
             if (action === "left") move(-1);
             if (action === "right") move(1);
-            if (action === "down") drop();
+            if (action === "down") drop(true);
             if (action === "rotate") rotate();
             if (action === "drop") hardDrop();
-        });
+        }, null, repeat ? { repeat: 70, delay: 170 } : {});
+    });
+
+    // Жесты на поле: тап - поворот, свайп влево/вправо - сдвиг, вниз - ускорение.
+    GameBox.swipe(canvas, direction => {
+        if (direction === "left") move(-1);
+        if (direction === "right") move(1);
+        if (direction === "down") drop(true);
+        if (direction === "up") rotate();
+    }, {
+        continuous: true,
+        distance: 26,
+        onTap: () => rotate()
     });
 
     restart.addEventListener("click", start);

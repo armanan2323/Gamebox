@@ -69,7 +69,10 @@ window.createPong = function(root) {
 
     let mode = "ai";
     let running = true;
-    let animationFrame = null;
+    let serveDelay = 0;
+
+    const touchTargets = new Map();
+    const mobileControls = box.querySelector(".pong-mobile-controls");
 
     let playerOne;
     let playerTwo;
@@ -115,11 +118,14 @@ window.createPong = function(root) {
         };
 
         running = true;
+        serveDelay = 45;
+
+        mobileControls.classList.toggle("single", mode === "ai");
 
         status.textContent =
             mode === "ai"
-                ? "Вы против ИИ • Первый до 7 очков"
-                : "Вдвоём • Игрок 1: W/S • Игрок 2: ↑/↓";
+                ? "Вы против ИИ • W/S, ↑/↓ или палец на поле"
+                : "Вдвоём • Игрок 1: W/S • Игрок 2: ↑/↓ • или пальцы на своей половине";
     }
 
     function resetBall(direction) {
@@ -130,21 +136,47 @@ window.createPong = function(root) {
 
         ball.vx = direction * 3.2;
         ball.vy = Math.sin(angle) * 3.2;
+
+        serveDelay = 40;
     }
 
     function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
     }
 
+    function moveTowards(paddle, targetY) {
+        const center = paddle.y + paddle.height / 2;
+        const diff = targetY - center;
+
+        paddle.y += Math.max(-playerSpeed * 1.6, Math.min(playerSpeed * 1.6, diff));
+    }
+
+    function touchTarget(player) {
+        for (const target of touchTargets.values()) {
+            if (target.player === player) return target.y;
+        }
+
+        return null;
+    }
+
     function movePlayerOne() {
         let direction = 0;
 
-        if (keys.w || touchState.player1Up) {
+        const upKey = mode === "ai" ? keys.w || keys.ArrowUp : keys.w;
+        const downKey = mode === "ai" ? keys.s || keys.ArrowDown : keys.s;
+
+        if (upKey || touchState.player1Up) {
             direction -= 1;
         }
 
-        if (keys.s || touchState.player1Down) {
+        if (downKey || touchState.player1Down) {
             direction += 1;
+        }
+
+        const target = touchTarget(1);
+
+        if (target !== null && direction === 0) {
+            moveTowards(playerOne, target);
         }
 
         playerOne.y += direction * playerSpeed;
@@ -168,6 +200,12 @@ window.createPong = function(root) {
                 direction += 1;
             }
 
+            const target = touchTarget(2);
+
+            if (target !== null && direction === 0) {
+                moveTowards(playerTwo, target);
+            }
+
             playerTwo.y += direction * playerSpeed;
 
             playerTwo.y = clamp(
@@ -182,12 +220,14 @@ window.createPong = function(root) {
         const paddleCenter =
             playerTwo.y + playerTwo.height / 2;
 
-        const target = ball.y;
+        // ИИ следит за мячом, когда тот летит к нему, иначе возвращается в центр.
+        const target = ball.vx > 0 ? ball.y : HEIGHT / 2;
+        const speed = aiSpeed + Math.min(1.6, (playerOne.score + playerTwo.score) * 0.08);
 
-        if (target < paddleCenter - 25) {
-            playerTwo.y -= aiSpeed;
-        } else if (target > paddleCenter + 25) {
-            playerTwo.y += aiSpeed;
+        if (target < paddleCenter - 20) {
+            playerTwo.y -= speed;
+        } else if (target > paddleCenter + 20) {
+            playerTwo.y += speed;
         }
 
         playerTwo.y = clamp(
@@ -237,17 +277,24 @@ window.createPong = function(root) {
     }
 
     function updateBall() {
+        if (serveDelay > 0) {
+            serveDelay--;
+            return;
+        }
+
         ball.x += ball.vx;
         ball.y += ball.vy;
 
         if (ball.y - ball.radius <= 0) {
             ball.y = ball.radius;
-            ball.vy *= -1;
+            ball.vy = Math.abs(ball.vy);
+            GameBox.sound("move");
         }
 
         if (ball.y + ball.radius >= HEIGHT) {
             ball.y = HEIGHT - ball.radius;
-            ball.vy *= -1;
+            ball.vy = -Math.abs(ball.vy);
+            GameBox.sound("move");
         }
 
         if (
@@ -255,6 +302,7 @@ window.createPong = function(root) {
             circleHitsPaddle(playerOne)
         ) {
             bounceFromPaddle(playerOne, 1);
+            GameBox.sound("bounce");
         }
 
         if (
@@ -262,10 +310,12 @@ window.createPong = function(root) {
             circleHitsPaddle(playerTwo)
         ) {
             bounceFromPaddle(playerTwo, -1);
+            GameBox.sound("bounce");
         }
 
         if (ball.x < -ball.radius) {
             playerTwo.score++;
+            GameBox.sound(mode === "ai" ? "error" : "score");
 
             if (playerTwo.score >= winningScore) {
                 finishGame(2);
@@ -277,6 +327,7 @@ window.createPong = function(root) {
 
         if (ball.x > WIDTH + ball.radius) {
             playerOne.score++;
+            GameBox.sound("score");
 
             if (playerOne.score >= winningScore) {
                 finishGame(1);
@@ -293,14 +344,20 @@ window.createPong = function(root) {
         if (mode === "ai") {
             status.textContent =
                 player === 1
-                    ? "🏆 Вы победили!"
-                    : "🤖 ИИ победил!";
+                    ? "🏆 Вы победили! Пробел или «Заново» - ещё раз."
+                    : "🤖 ИИ победил! Пробел или «Заново» - ещё раз.";
+
+            GameBox.sound(player === 1 ? "win" : "lose");
+            GameBox.win(player === 1 ? GameBox.name(1) : GameBox.aiName);
         } else {
             status.textContent =
-                player === 1
-                    ? "🏆 Победил игрок 1!"
-                    : "🏆 Победил игрок 2!";
+                `🏆 Победил ${GameBox.name(player)}!`;
+
+            GameBox.sound("win");
+            GameBox.win(GameBox.name(player));
         }
+
+        GameBox.vibrate(100);
     }
 
     function drawBackground() {
@@ -369,13 +426,13 @@ window.createPong = function(root) {
         ctx.textAlign = "center";
 
         ctx.fillText(
-            "PLAYER 1",
+            GameBox.name(1),
             WIDTH / 2 - 70,
             82
         );
 
         ctx.fillText(
-            mode === "ai" ? "AI" : "PLAYER 2",
+            mode === "ai" ? "AI" : GameBox.name(2),
             WIDTH / 2 + 70,
             82
         );
@@ -388,34 +445,47 @@ window.createPong = function(root) {
         drawPaddle(playerOne);
         drawPaddle(playerTwo);
         drawBall();
+
+        if (!running) {
+            ctx.fillStyle = "rgba(0, 0, 0, .55)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 34px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("Нажми, чтобы сыграть ещё", WIDTH / 2, HEIGHT / 2 + 12);
+        }
     }
+
+    let lastStatus = "";
 
     function updateStatus() {
         if (!running) {
             return;
         }
 
-        if (mode === "ai") {
-            status.textContent =
-                `Вы ${playerOne.score} : ${playerTwo.score} ИИ`;
-        } else {
-            status.textContent =
-                `Игрок 1 ${playerOne.score} : ${playerTwo.score} Игрок 2`;
+        const text = mode === "ai"
+            ? `Вы ${playerOne.score} : ${playerTwo.score} ИИ`
+            : `${GameBox.name(1)} ${playerOne.score} : ${playerTwo.score} ${GameBox.name(2)}`;
+
+        if (text !== lastStatus) {
+            status.textContent = text;
+            lastStatus = text;
         }
     }
 
-    function loop() {
+    function step() {
         if (running) {
             movePlayerOne();
             movePlayerTwo();
             updateBall();
-            updateStatus();
         }
-
-        draw();
-
-        animationFrame = requestAnimationFrame(loop);
     }
+
+    const loop = GameBox.loop(step, () => {
+        updateStatus();
+        draw();
+    });
 
     function setMode(newMode) {
         mode = newMode;
@@ -427,6 +497,7 @@ window.createPong = function(root) {
             );
         });
 
+        lastStatus = "";
         createState();
     }
 
@@ -457,7 +528,10 @@ window.createPong = function(root) {
         }
 
         if (key === " ") {
+            event.preventDefault();
+
             if (!running) {
+                lastStatus = "";
                 createState();
             }
         }
@@ -501,28 +575,59 @@ window.createPong = function(root) {
         }
     }
 
-    function handleControlStart(event) {
+    controls.forEach(button => {
+        const player = Number(button.dataset.player);
+        const direction = button.dataset.direction;
+
+        GameBox.hold(
+            button,
+            () => setTouch(player, direction, true),
+            () => setTouch(player, direction, false)
+        );
+    });
+
+    // Палец на поле: ракетка следует за ним. Во «вдвоём» каждый
+    // игрок управляет своей половиной экрана (работает мультитач).
+    function canvasDown(event) {
         event.preventDefault();
 
-        const button = event.currentTarget;
+        if (!running) {
+            lastStatus = "";
+            createState();
+            return;
+        }
 
-        setTouch(
-            Number(button.dataset.player),
-            button.dataset.direction,
-            true
-        );
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (error) {}
+
+        const point = GameBox.point(canvas, event);
+        const player = mode === "two" && point.x > WIDTH / 2 ? 2 : 1;
+
+        touchTargets.set(event.pointerId, { player, y: point.y });
     }
 
-    function handleControlEnd(event) {
-        event.preventDefault();
+    function canvasMove(event) {
+        const target = touchTargets.get(event.pointerId);
 
-        const button = event.currentTarget;
+        if (!target) return;
 
-        setTouch(
-            Number(button.dataset.player),
-            button.dataset.direction,
-            false
-        );
+        target.y = GameBox.point(canvas, event).y;
+    }
+
+    function canvasUp(event) {
+        touchTargets.delete(event.pointerId);
+    }
+
+    canvas.addEventListener("pointerdown", canvasDown);
+    canvas.addEventListener("pointermove", canvasMove);
+    canvas.addEventListener("pointerup", canvasUp);
+    canvas.addEventListener("pointercancel", canvasUp);
+
+    function handleBlur() {
+        Object.keys(keys).forEach(key => {
+            keys[key] = false;
+        });
     }
 
     modeButtons.forEach(button => {
@@ -532,73 +637,23 @@ window.createPong = function(root) {
     });
 
     restartButton.addEventListener("click", () => {
+        lastStatus = "";
         createState();
     });
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-
-    controls.forEach(button => {
-        button.addEventListener(
-            "pointerdown",
-            handleControlStart
-        );
-
-        button.addEventListener(
-            "pointerup",
-            handleControlEnd
-        );
-
-        button.addEventListener(
-            "pointercancel",
-            handleControlEnd
-        );
-
-        button.addEventListener(
-            "pointerleave",
-            handleControlEnd
-        );
-    });
+    window.addEventListener("blur", handleBlur);
 
     createState();
     draw();
-    loop();
+    loop.start();
 
     return function cleanup() {
-        if (animationFrame) {
-            cancelAnimationFrame(animationFrame);
-        }
+        loop.stop();
 
-        window.removeEventListener(
-            "keydown",
-            handleKeyDown
-        );
-
-        window.removeEventListener(
-            "keyup",
-            handleKeyUp
-        );
-
-        controls.forEach(button => {
-            button.removeEventListener(
-                "pointerdown",
-                handleControlStart
-            );
-
-            button.removeEventListener(
-                "pointerup",
-                handleControlEnd
-            );
-
-            button.removeEventListener(
-                "pointercancel",
-                handleControlEnd
-            );
-
-            button.removeEventListener(
-                "pointerleave",
-                handleControlEnd
-            );
-        });
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+        window.removeEventListener("blur", handleBlur);
     };
 };

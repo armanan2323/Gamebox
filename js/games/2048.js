@@ -8,6 +8,18 @@ window.create2048 = function(root) {
 
             <div class="grid-2048"></div>
 
+            <div class="mobile-controls">
+                <div class="mobile-dpad ">
+                    <button class="mobile-control" data-dir="up" aria-label="Вверх">↑</button>
+
+                    <div class="mobile-dpad-middle">
+                        <button class="mobile-control" data-dir="left" aria-label="Влево">←</button>
+                        <button class="mobile-control" data-dir="down" aria-label="Вниз">↓</button>
+                        <button class="mobile-control" data-dir="right" aria-label="Вправо">→</button>
+                    </div>
+                </div>
+            </div>
+
             <p class="game-status game2048-status">
                 Соединяй одинаковые числа.
             </p>
@@ -22,11 +34,22 @@ window.create2048 = function(root) {
     let board;
     let score;
     let gameOver;
+    let reached2048;
+    let newTile = -1;
+    let merged = false;
+
+    const tiles = Array.from({ length: 16 }, () => {
+        const tile = document.createElement("div");
+        tile.className = "tile-2048";
+        boardElement.appendChild(tile);
+        return tile;
+    });
 
     function start() {
         board = Array(16).fill(0);
         score = 0;
         gameOver = false;
+        reached2048 = false;
 
         addTile();
         addTile();
@@ -48,12 +71,14 @@ window.create2048 = function(root) {
             empty[Math.floor(Math.random() * empty.length)];
 
         board[index] = Math.random() < 0.9 ? 2 : 4;
+        newTile = index;
     }
 
     function move(direction) {
         if (gameOver) return;
 
         const old = [...board];
+        merged = false;
 
         if (direction === "left") {
             for (let y = 0; y < 4; y++) {
@@ -112,18 +137,28 @@ window.create2048 = function(root) {
             }
         }
 
-        if (JSON.stringify(old) !== JSON.stringify(board)) {
-            addTile();
-            render();
-        }
+        const changed = board.some((value, index) => value !== old[index]);
 
-        if (board.includes(2048)) {
-            status.textContent = "Ты собрал 2048!";
+        if (!changed) return;
+
+        addTile();
+        render();
+
+        GameBox.sound(merged ? "eat" : "move");
+
+        if (!reached2048 && board.includes(2048)) {
+            reached2048 = true;
+            status.textContent = "Ты собрал 2048! Можно играть дальше.";
+            GameBox.sound("win");
         }
 
         if (!canMove()) {
             gameOver = true;
-            status.textContent = "Ходов больше нет. Нажми «Заново».";
+            status.textContent = `Ходов больше нет. Счёт: ${score}. Нажми «Заново».`;
+
+            GameBox.sound("lose");
+            GameBox.vibrate([80, 40, 80]);
+            GameBox.submit(score);
         }
     }
 
@@ -139,6 +174,7 @@ window.create2048 = function(root) {
 
                 result.push(value);
                 score += value;
+                merged = true;
 
                 i++;
             } else {
@@ -180,21 +216,26 @@ window.create2048 = function(root) {
     }
 
     function render() {
-        boardElement.innerHTML = "";
+        board.forEach((value, index) => {
+            const tile = tiles[index];
 
-        board.forEach(value => {
-            const tile = document.createElement("div");
-
-            tile.className = "tile-2048";
+            tile.textContent = value || "";
 
             if (value) {
-                tile.textContent = value;
                 tile.dataset.value = value;
+            } else {
+                delete tile.dataset.value;
             }
 
-            boardElement.appendChild(tile);
+            tile.classList.remove("new");
+
+            if (index === newTile) {
+                void tile.offsetWidth;
+                tile.classList.add("new");
+            }
         });
 
+        newTile = -1;
         scoreElement.textContent = score;
     }
 
@@ -220,6 +261,8 @@ window.create2048 = function(root) {
     let startY = 0;
 
     function touchStart(event) {
+        if (!event.touches.length) return;
+
         const touch = event.touches[0];
 
         startX = touch.clientX;
@@ -227,12 +270,14 @@ window.create2048 = function(root) {
     }
 
     function touchEnd(event) {
+        if (!event.changedTouches.length) return;
+
         const touch = event.changedTouches[0];
 
         const dx = touch.clientX - startX;
         const dy = touch.clientY - startY;
 
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) {
             return;
         }
 
@@ -242,6 +287,10 @@ window.create2048 = function(root) {
             move(dy > 0 ? "down" : "up");
         }
     }
+
+    root.querySelectorAll(".mobile-dpad .mobile-control").forEach(button => {
+        GameBox.hold(button, () => move(button.dataset.dir));
+    });
 
     restart.addEventListener("click", start);
 
@@ -259,11 +308,23 @@ window.create2048 = function(root) {
         { passive: true }
     );
 
+    function touchMove(event) {
+        event.preventDefault();
+    }
+
+    // Свайп по полю не должен прокручивать страницу.
+    boardElement.addEventListener(
+        "touchmove",
+        touchMove,
+        { passive: false }
+    );
+
     start();
 
     return function() {
         document.removeEventListener("keydown", keydown);
         boardElement.removeEventListener("touchstart", touchStart);
         boardElement.removeEventListener("touchend", touchEnd);
+        boardElement.removeEventListener("touchmove", touchMove);
     };
 };

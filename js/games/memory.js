@@ -30,10 +30,22 @@ window.createMemory = function(root) {
     let locked;
     let moves;
     let matched;
+    let hideTimer = null;
+    let buttons = [];
+
+    function shuffle(list) {
+        for (let i = list.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [list[i], list[j]] = [list[j], list[i]];
+        }
+
+        return list;
+    }
 
     function start() {
-        cards = [...symbols, ...symbols]
-            .sort(() => Math.random() - 0.5)
+        clearTimeout(hideTimer);
+
+        cards = shuffle([...symbols, ...symbols])
             .map((symbol, index) => ({
                 id: index,
                 symbol,
@@ -50,6 +62,7 @@ window.createMemory = function(root) {
         movesElement.textContent = moves;
         status.textContent = "Найди все пары.";
 
+        buildBoard();
         render();
     }
 
@@ -63,6 +76,7 @@ window.createMemory = function(root) {
         }
 
         card.open = true;
+        GameBox.sound("flip");
 
         if (!firstCard) {
             firstCard = card;
@@ -89,13 +103,19 @@ window.createMemory = function(root) {
             if (matched === cards.length) {
                 status.textContent =
                     `Победа! Ходов: ${moves}`;
+
+                GameBox.sound("win");
+                GameBox.vibrate(80);
+                GameBox.submit(moves);
+            } else {
+                GameBox.sound("score");
             }
 
             render();
         } else {
             locked = true;
 
-            setTimeout(() => {
+            hideTimer = setTimeout(() => {
                 firstCard.open = false;
                 secondCard.open = false;
 
@@ -109,33 +129,33 @@ window.createMemory = function(root) {
         }
     }
 
-    function render() {
+    function buildBoard() {
         board.innerHTML = "";
 
-        cards.forEach(card => {
+        buttons = cards.map(card => {
             const button = document.createElement("button");
 
             button.className = "memory-card";
-
-            if (card.open || card.matched) {
-                button.classList.add("open");
-            }
-
-            if (card.matched) {
-                button.classList.add("matched");
-            }
-
-            button.innerHTML = `
-                <span class="memory-symbol">
-                    ${card.open || card.matched ? card.symbol : "?"}
-                </span>
-            `;
+            button.innerHTML = `<span class="memory-symbol">?</span>`;
 
             button.addEventListener("click", () => {
                 flip(card);
             });
 
             board.appendChild(button);
+
+            return button;
+        });
+    }
+
+    function render() {
+        cards.forEach((card, index) => {
+            const button = buttons[index];
+            const visible = card.open || card.matched;
+
+            button.classList.toggle("open", visible);
+            button.classList.toggle("matched", card.matched);
+            button.firstElementChild.textContent = visible ? card.symbol : "?";
         });
     }
 
@@ -143,5 +163,7 @@ window.createMemory = function(root) {
 
     start();
 
-    return function() {};
+    return function() {
+        clearTimeout(hideTimer);
+    };
 };

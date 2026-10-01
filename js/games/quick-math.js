@@ -32,7 +32,7 @@ window.createQuickMath = function(root) {
             </div>
 
             <p class="game-status math-status">
-                Нажми на правильный ответ.
+                Нажми на правильный ответ (или клавиши 1-4). Ошибка - минус 2 секунды.
             </p>
         </div>
     `;
@@ -78,11 +78,12 @@ window.createQuickMath = function(root) {
         timeElement.textContent = "30";
 
         statusElement.textContent =
-            "Нажми на правильный ответ.";
+            "Нажми на правильный ответ (или клавиши 1-4). Ошибка - минус 2 секунды.";
 
         answerButtons.forEach(
             button => {
                 button.disabled = false;
+                button.classList.remove("correct", "wrong");
             }
         );
 
@@ -92,7 +93,11 @@ window.createQuickMath = function(root) {
             time--;
 
             timeElement.textContent =
-                time;
+                Math.max(0, time);
+
+            if (time <= 5 && time > 0) {
+                GameBox.sound("tick");
+            }
 
             if (time <= 0) {
                 endGame();
@@ -174,17 +179,19 @@ window.createQuickMath = function(root) {
                     Math.random() * 21
                 ) - 10;
 
-            if (offset !== 0) {
+            if (offset !== 0 && answer + offset >= 0) {
                 answers.add(
                     answer + offset
                 );
             }
         }
 
-        const shuffled =
-            [...answers].sort(
-                () => Math.random() - 0.5
-            );
+        const shuffled = [...answers];
+
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
 
         answerButtons.forEach(
             (button, index) => {
@@ -197,12 +204,25 @@ window.createQuickMath = function(root) {
         );
     }
 
-    function selectAnswer(event) {
-        if (!running) return;
+    let flashTimer = null;
+
+    function flash(button, className) {
+        clearTimeout(flashTimer);
+
+        answerButtons.forEach(item => item.classList.remove("correct", "wrong"));
+        button.classList.add(className);
+
+        flashTimer = setTimeout(() => {
+            button.classList.remove(className);
+        }, 250);
+    }
+
+    function choose(button) {
+        if (!running || !button) return;
 
         const selected =
             Number(
-                event.currentTarget.dataset.answer
+                button.dataset.answer
             );
 
         if (selected === answer) {
@@ -214,12 +234,42 @@ window.createQuickMath = function(root) {
             statusElement.textContent =
                 "Правильно!";
 
+            GameBox.sound("score");
+            flash(button, "correct");
+
             generateQuestion();
         } else {
+            time = Math.max(0, time - 2);
+            timeElement.textContent = time;
+
             statusElement.textContent =
                 `Неверно. Правильный ответ: ${answer}`;
 
+            GameBox.sound("error");
+            GameBox.vibrate(60);
+            flash(button, "wrong");
+
+            if (time <= 0) {
+                endGame();
+                return;
+            }
+
             generateQuestion();
+        }
+    }
+
+    function selectAnswer(event) {
+        choose(event.currentTarget);
+    }
+
+    function keydown(event) {
+        if (/^[1-4]$/.test(event.key)) {
+            choose(answerButtons[Number(event.key) - 1]);
+        }
+
+        if (!running && (event.key === "Enter" || event.key === " ")) {
+            event.preventDefault();
+            reset();
         }
     }
 
@@ -232,23 +282,40 @@ window.createQuickMath = function(root) {
         timeElement.textContent = "0";
 
         statusElement.textContent =
-            `Время вышло! Результат: ${score}`;
+            `Время вышло! Результат: ${score}. Enter - ещё раз.`;
 
         answerButtons.forEach(
             button => {
                 button.disabled = true;
             }
         );
+
+        GameBox.sound(score > 0 ? "win" : "lose");
+        GameBox.submit(score);
     }
 
+    // pointerdown - мгновенная реакция на телефоне (без задержки click).
     answerButtons.forEach(
         button => {
             button.addEventListener(
+                "pointerdown",
+                event => {
+                    event.preventDefault();
+                    selectAnswer(event);
+                }
+            );
+
+            button.addEventListener(
                 "click",
-                selectAnswer
+                event => {
+                    // Клавиатура (Enter/пробел на кнопке) даёт click без pointerdown.
+                    if (event.detail === 0) selectAnswer(event);
+                }
             );
         }
     );
+
+    document.addEventListener("keydown", keydown);
 
     restartButton.addEventListener(
         "click",
@@ -259,6 +326,8 @@ window.createQuickMath = function(root) {
 
     return function cleanup() {
         clearInterval(timer);
+        clearTimeout(flashTimer);
+        document.removeEventListener("keydown", keydown);
 
         restartButton.removeEventListener(
             "click",
