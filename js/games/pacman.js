@@ -560,7 +560,7 @@ window.createPacman = function(root) {
 
         if (
             event.key === "ArrowUp" ||
-            event.key.toLowerCase() === "w"
+            GameBox.key(event) === "w"
         ) {
             setDirection(0, -1);
             event.preventDefault();
@@ -568,7 +568,7 @@ window.createPacman = function(root) {
 
         if (
             event.key === "ArrowDown" ||
-            event.key.toLowerCase() === "s"
+            GameBox.key(event) === "s"
         ) {
             setDirection(0, 1);
             event.preventDefault();
@@ -576,7 +576,7 @@ window.createPacman = function(root) {
 
         if (
             event.key === "ArrowLeft" ||
-            event.key.toLowerCase() === "a"
+            GameBox.key(event) === "a"
         ) {
             setDirection(-1, 0);
             event.preventDefault();
@@ -584,7 +584,7 @@ window.createPacman = function(root) {
 
         if (
             event.key === "ArrowRight" ||
-            event.key.toLowerCase() === "d"
+            GameBox.key(event) === "d"
         ) {
             setDirection(1, 0);
             event.preventDefault();

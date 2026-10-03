@@ -763,3 +763,34 @@ input:focus-visible {
         animation: none !important;
     }
 }
+
+/* Телефон в альбомной ориентации: компактный заголовок игры */
+@media (orientation: landscape) and (max-height: 500px) {
+    body.in-game .container {
+        padding: 8px 0 30px;
+    }
+
+    body.in-game .game-page-head {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+    }
+
+    body.in-game .back-button {
+        margin: 0;
+        flex: none;
+    }
+
+    body.in-game .game-page-head .eyebrow {
+        display: none;
+    }
+
+    body.in-game .game-page-head h1 {
+        font-size: 22px;
+    }
+
+    body.in-game .header-inner {
+        min-height: 48px;
+    }
+}

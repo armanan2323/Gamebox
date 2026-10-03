@@ -511,11 +511,11 @@ window.createPong = function(root) {
             event.preventDefault();
         }
 
-        if (key.toLowerCase() === "w") {
+        if (GameBox.key(event) === "w") {
             keys.w = true;
         }
 
-        if (key.toLowerCase() === "s") {
+        if (GameBox.key(event) === "s") {
             keys.s = true;
         }
 
@@ -540,11 +540,11 @@ window.createPong = function(root) {
     function handleKeyUp(event) {
         const key = event.key;
 
-        if (key.toLowerCase() === "w") {
+        if (GameBox.key(event) === "w") {
             keys.w = false;
         }
 
-        if (key.toLowerCase() === "s") {
+        if (GameBox.key(event) === "s") {
             keys.s = false;
         }
 

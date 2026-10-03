@@ -309,7 +309,7 @@ window.createCarDodge = function(root) {
     }
 
     function keyDown(event) {
-        const key = event.key.toLowerCase();
+        const key = GameBox.key(event);
 
         if (!running && (key === " " || key === "enter")) {
             event.preventDefault();
@@ -335,7 +335,7 @@ window.createCarDodge = function(root) {
     }
 
     function keyUp(event) {
-        const key = event.key.toLowerCase();
+        const key = GameBox.key(event);
 
         if (
             key === "a" ||

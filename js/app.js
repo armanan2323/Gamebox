@@ -205,6 +205,42 @@ quickMath: {
     group: "twoPlayer",
     create: "createAirHockey"
 },
+
+    tankBattle: {
+        title: "Tank Battle",
+        icon: "💥",
+        desc: "Сразитесь на арене",
+        category: "Два игрока",
+        group: "twoPlayer",
+        create: "createTankBattle"
+    },
+
+    boxing: {
+        title: "Boxing",
+        icon: "🥊",
+        desc: "Победите соперника",
+        category: "Два игрока",
+        group: "twoPlayer",
+        create: "createBoxing"
+    },
+
+    aimTrainer: {
+        title: "Aim Trainer",
+        icon: "🎯",
+        desc: "Проверьте скорость и точность",
+        category: "На реакцию",
+        group: "reaction",
+        create: "createAimTrainer"
+    },
+
+    endlessRunner: {
+        title: "Endless Runner",
+        icon: "🏃",
+        desc: "Продержитесь как можно дольше",
+        category: "Аркады",
+        group: "arcade",
+        create: "createEndlessRunner"
+    }
 };
 
 const ratings = {
@@ -230,7 +266,11 @@ const ratings = {
     reaction: { type: "best", order: "asc", format: "ms" },
     doodleJump: { type: "best", order: "desc", format: "points" },
     billiards: { type: "wins" },
-    airHockey: { type: "wins" }
+    airHockey: { type: "wins" },
+    tankBattle: { type: "wins" },
+    boxing: { type: "wins" },
+    aimTrainer: { type: "best", order: "desc", format: "points" },
+    endlessRunner: { type: "best", order: "desc", format: "points" }
 };
 
 /* ---------- Хранилище ---------- */
@@ -709,27 +749,42 @@ function recordWin(id, name) {
 
 /* ---------- Общие помощники для игр ---------- */
 
+// Все зажатые сейчас кнопки - чтобы отпустить их при сворачивании вкладки.
+const activeHolds = new Set();
+
+function releaseAllHolds() {
+    activeHolds.forEach(release => release());
+}
+
+window.addEventListener("blur", releaseAllHolds);
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) releaseAllHolds();
+});
+
+// Группы кнопок, по которым можно вести пальцем: нажатие «переезжает»
+// на соседнюю стрелку без отрыва пальца.
+const SLIDE_GROUPS =
+    ".mobile-dpad, .mobile-game-controls, .pong-control-group, [data-slide]";
+
 function holdButton(button, onDown, onUp, options = {}) {
     let repeatDelay = null;
     let repeatTimer = null;
     let pressed = false;
+    let pointerId = null;
+    let captured = false;
+
+    button.dataset.hold = "1";
 
     function stopRepeat() {
         clearTimeout(repeatDelay);
         clearInterval(repeatTimer);
     }
 
-    function down(event) {
-        event.preventDefault();
-
-        if (pressed) return;
-
+    function press(event) {
         pressed = true;
+        pointerId = event.pointerId;
         button.classList.add("pressed");
-
-        try {
-            button.setPointerCapture(event.pointerId);
-        } catch (error) {}
+        activeHolds.add(release);
 
         onDown && onDown(event);
 
@@ -744,26 +799,89 @@ function holdButton(button, onDown, onUp, options = {}) {
         }
     }
 
-    function up(event) {
+    function release(event) {
         if (!pressed) return;
 
         pressed = false;
+        pointerId = null;
+        captured = false;
         button.classList.remove("pressed");
+        activeHolds.delete(release);
         stopRepeat();
 
-        onUp && onUp(event);
+        onUp && onUp(event || {});
+    }
+
+    function down(event) {
+        event.preventDefault();
+
+        if (pressed) return;
+
+        captured = false;
+
+        try {
+            button.setPointerCapture(event.pointerId);
+            captured = true;
+        } catch (error) {}
+
+        press(event);
+    }
+
+    function up(event) {
+        if (pointerId !== null && event.pointerId !== pointerId) return;
+
+        release(event);
+    }
+
+    function move(event) {
+        if (!pressed || event.pointerId !== pointerId) return;
+
+        // Палец уехал на другую кнопку той же группы - переключаемся на неё.
+        const group = button.closest(SLIDE_GROUPS);
+
+        if (!group) return;
+
+        const target = document.elementFromPoint(event.clientX, event.clientY);
+        const next = target && target.closest("button[data-hold]");
+
+        if (!next || next === button || !group.contains(next)) return;
+        if (next.closest(SLIDE_GROUPS) !== group) return;
+
+        const id = event.pointerId;
+
+        release(event);
+
+        try {
+            button.releasePointerCapture(id);
+        } catch (error) {}
+
+        next.dispatchEvent(new PointerEvent("pointerdown", {
+            pointerId: id,
+            pointerType: event.pointerType,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            bubbles: true,
+            cancelable: true
+        }));
+    }
+
+    function leave(event) {
+        // Если браузер не дал «захватить» палец, отпускаем при уходе с кнопки.
+        if (!captured) up(event);
     }
 
     button.addEventListener("pointerdown", down);
     button.addEventListener("pointerup", up);
     button.addEventListener("pointercancel", up);
-    button.addEventListener("lostpointercapture", up);
+    button.addEventListener("pointermove", move);
+    button.addEventListener("pointerleave", leave);
+    button.addEventListener("lostpointercapture", event => {
+        // При «переезде» на соседнюю кнопку захват уже снят вручную.
+        if (pressed && event.pointerId === pointerId) release(event);
+    });
     button.addEventListener("contextmenu", event => event.preventDefault());
 
-    return function release() {
-        stopRepeat();
-        pressed = false;
-    };
+    return release;
 }
 
 function onSwipe(element, handler, options = {}) {
@@ -902,6 +1020,110 @@ function createLoop(step, render) {
     };
 }
 
+/* ---------- Подгонка поля под экран ---------- */
+
+// Мгновенная прокрутка (на странице включена плавная, она здесь мешает).
+function scrollInstant(top) {
+    const root = document.documentElement;
+    const previous = root.style.scrollBehavior;
+
+    root.style.scrollBehavior = "auto";
+    window.scrollTo(0, top);
+    root.style.scrollBehavior = previous;
+}
+
+// Поле игры уменьшается так, чтобы вместе с кнопками-стрелками
+// помещаться на экран любого телефона без прокрутки.
+const FIT_TARGETS =
+    "canvas:not(.tetris-next), .grid-2048, .puzzle15-board";
+
+let fitFrame = null;
+
+function applyFit(target, isCanvas, size) {
+    if (isCanvas) {
+        target.style.maxHeight = `${size}px`;
+    } else {
+        target.style.maxWidth = `${size}px`;
+    }
+}
+
+function fitGame(scrollToGame) {
+    clearTimeout(fitFrame);
+
+    fitFrame = setTimeout(() => {
+        const box = gameRoot.querySelector(".game-box");
+        const target = box && box.querySelector(FIT_TARGETS);
+
+        if (!target) return;
+
+        const isCanvas = target.tagName === "CANVAS";
+
+        target.style.maxHeight = "";
+        target.style.maxWidth = "";
+
+        const viewport = window.visualViewport
+            ? window.visualViewport.height
+            : window.innerHeight;
+
+        const header = document.querySelector(".site-header");
+        const headerHeight =
+            header && getComputedStyle(header).position === "sticky"
+                ? header.getBoundingClientRect().height
+                : 0;
+
+        const targetHeight = target.getBoundingClientRect().height;
+        const boxRect = box.getBoundingClientRect();
+        const other = boxRect.height - targetHeight;
+        const boxTop = boxRect.top + window.scrollY;
+
+        // Сначала пытаемся уместить всё вместе с заголовком страницы.
+        // Если не выходит (маленький экран, альбомная ориентация) -
+        // всё ниже шапки сайта, и страница сама прокручивается к игре.
+        let viewTop = 0;
+        let available = viewport - boxTop - other - 8;
+
+        if (available < 220) {
+            viewTop = Math.max(0, boxTop - headerHeight - 4);
+            available = viewport - headerHeight - 4 - other - 8;
+        }
+
+        available = Math.max(140, Math.floor(available));
+
+        if (!isCanvas && available >= targetHeight) return;
+
+        applyFit(target, isCanvas, available);
+
+        // Второй проход: поправка на переносы строк и округления.
+        const bottom = box.getBoundingClientRect().bottom + window.scrollY;
+        const overflow = bottom - (viewTop + viewport - 6);
+
+        if (overflow > 0) {
+            const size = isCanvas
+                ? target.getBoundingClientRect().height
+                : target.getBoundingClientRect().width;
+
+            applyFit(target, isCanvas, Math.max(140, Math.floor(size - overflow)));
+        }
+
+        if (scrollToGame && viewTop > 0) {
+            scrollInstant(viewTop);
+        }
+    }, 30);
+}
+
+window.addEventListener("resize", () => fitGame(false));
+window.addEventListener("orientationchange", () => setTimeout(() => fitGame(true), 250));
+
+// Клавиша по физическому положению: WASD работает и на русской раскладке.
+function layoutKey(event) {
+    const code = event.code || "";
+
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+    if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+
+    return (event.key || "").toLowerCase();
+}
+
 window.GameBox = {
     sound: name => sound.play(name),
     vibrate,
@@ -913,6 +1135,8 @@ window.GameBox = {
     hold: holdButton,
     swipe: onSwipe,
     point: canvasPoint,
+    fit: fitGame,
+    key: layoutKey,
     loop: createLoop
 };
 
@@ -1012,7 +1236,10 @@ function openGame(id, fromHistory) {
 
     renderLeaderboard();
 
-    window.scrollTo({ top: 0, behavior: "auto" });
+    scrollInstant(0);
+
+    fitGame(true);
+    setTimeout(() => fitGame(true), 350);
 }
 
 function showGameError() {

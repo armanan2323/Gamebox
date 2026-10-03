@@ -17,7 +17,7 @@ window.createDoodleJump = function(root) {
                 height="600"
             ></canvas>
 
-            <div class="mobile-controls">
+            <div class="mobile-controls" data-slide>
                 <button data-dir="left">←</button>
                 <button data-dir="right">→</button>
             </div>

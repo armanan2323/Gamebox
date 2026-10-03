@@ -2,19 +2,17 @@ window.createAirHockey = function(root) {
     root.innerHTML = `
         <div class="game-box air-hockey-game">
             <div class="game-toolbar">
-                <strong>Аэрохоккей</strong>
+                <div class="hockey-score">
+                    <span class="hockey-blue-score">0</span>
+                    <span>:</span>
+                    <span class="hockey-red-score">0</span>
+                </div>
                 <button class="game-button hockey-restart">Заново</button>
             </div>
 
             <div class="mode-switch hockey-mode-switch">
                 <button class="mode-button active" data-mode="ai">🤖 Против ИИ</button>
                 <button class="mode-button" data-mode="two">👥 Вдвоём</button>
-            </div>
-
-            <div class="hockey-score">
-                <span class="hockey-blue-score">0</span>
-                <span>:</span>
-                <span class="hockey-red-score">0</span>
             </div>
 
             <canvas class="air-hockey-canvas" width="480" height="720"></canvas>
@@ -151,8 +149,8 @@ window.createAirHockey = function(root) {
 
         statusElement.textContent =
             mode === "ai"
-                ? "Вы - синий снизу. Веди биту пальцем или мышью (или WASD/стрелки). До 7 голов."
-                : "Синий - снизу (WASD), красный - сверху (стрелки). Каждый ведёт биту на своей половине.";
+                ? "Вы - синий снизу. Ведите биту пальцем, мышью или стрелками. До 7 голов."
+                : "Синий - снизу, красный - сверху. Пальцем на своей половине или стрелками.";
 
         loop.start();
     }

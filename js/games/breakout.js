@@ -466,7 +466,7 @@ window.createBreakout = function(root) {
 
     function keyDown(event) {
         const key =
-            event.key.toLowerCase();
+            GameBox.key(event);
 
         if (key === " " || key === "enter" || event.key === "ArrowUp") {
             event.preventDefault();
@@ -501,7 +501,7 @@ window.createBreakout = function(root) {
 
     function keyUp(event) {
         const key =
-            event.key.toLowerCase();
+            GameBox.key(event);
 
         if (
             key === "a" ||

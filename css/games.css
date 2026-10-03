@@ -1792,3 +1792,571 @@
 .hockey-dpad-red .mobile-control {
     border-color: #e54848;
 }
+
+/* ---------- Стрелки на любых телефонах ---------- */
+
+/* Показываем кнопки на любом сенсорном устройстве (в т.ч. с пером
+   и в режиме «версия для ПК»), а не только на узких экранах. */
+@media (any-pointer: coarse) {
+    .mobile-controls,
+    .mobile-game-controls {
+        display: flex;
+    }
+
+    .snake-mobile-controls {
+        display: block;
+    }
+}
+
+.mobile-controls,
+.mobile-game-controls,
+.tetris-controls,
+.pong-mobile-controls {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.mobile-controls button,
+.mobile-control,
+.mobile-game-button,
+.tetris-controls button,
+.pong-control-group button {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    line-height: 1;
+}
+
+/* Ряд кнопок (Doodle Jump, Space Invaders, Flappy Bird) тянется по ширине */
+.mobile-controls > button {
+    flex: 1 1 0;
+    max-width: 150px;
+    min-width: 0;
+    min-height: clamp(52px, 8svh, 68px);
+    font-size: clamp(20px, 6vw, 28px);
+}
+
+/* Крестовина подстраивается под ширину и высоту экрана */
+.mobile-dpad .mobile-control {
+    width: clamp(58px, 20vw, 86px);
+    height: clamp(48px, 7.5svh, 68px);
+    font-size: clamp(22px, 6.5vw, 30px);
+}
+
+.mobile-dpad,
+.mobile-dpad-middle {
+    gap: clamp(5px, 1.6vw, 10px);
+}
+
+.mobile-dpad {
+    margin-top: 10px;
+}
+
+.mobile-game-button {
+    min-height: clamp(54px, 9svh, 76px);
+}
+
+.tetris-controls button {
+    min-height: clamp(46px, 7svh, 60px);
+}
+
+.pong-control-group button {
+    min-width: clamp(56px, 17vw, 80px);
+    min-height: clamp(48px, 7.5svh, 64px);
+}
+
+/* Аэрохоккей: две крестовины рядом */
+.mobile-dpad.compact .mobile-control {
+    width: clamp(40px, 12.5vw, 56px);
+    height: clamp(38px, 6svh, 50px);
+    font-size: clamp(18px, 5vw, 24px);
+}
+
+.mobile-dpad.compact,
+.mobile-dpad.compact .mobile-dpad-middle {
+    gap: clamp(3px, 1vw, 6px);
+}
+
+/* Альбомная ориентация телефона: экономим высоту */
+@media (orientation: landscape) and (max-height: 500px) {
+    .mobile-dpad .mobile-control {
+        height: 44px;
+    }
+
+    .mobile-controls > button,
+    .mobile-game-button,
+    .tetris-controls button,
+    .pong-control-group button {
+        min-height: 44px;
+    }
+
+    body.in-game .site-header {
+        position: static;
+    }
+}
+
+/* ---------- Компактная раскладка игр на телефоне ---------- */
+@media (max-width: 700px), (any-pointer: coarse) and (max-height: 900px) {
+    body.in-game .game-box .game-toolbar {
+        min-height: 0;
+        margin-bottom: 8px;
+        gap: 6px;
+    }
+
+    body.in-game .game-box .game-button {
+        min-height: 38px;
+        padding: 7px 12px;
+    }
+
+    body.in-game .game-box .mode-switch {
+        margin-bottom: 8px;
+    }
+
+    body.in-game .game-box .mode-button {
+        padding: 7px 10px;
+        font-size: 14px;
+    }
+
+    body.in-game .game-box .game-status {
+        min-height: 0;
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    body.in-game .game-box .mobile-controls,
+    body.in-game .game-box .mobile-game-controls,
+    body.in-game .game-box .snake-mobile-controls {
+        margin-top: 8px;
+    }
+
+    body.in-game .game-box .mobile-dpad {
+        margin-top: 0;
+    }
+
+    body.in-game .game-box .tetris-controls {
+        margin-top: 8px;
+    }
+
+    body.in-game .game-box .pong-mobile-controls {
+        margin-top: 8px;
+    }
+
+    /* Tetris: «Следующая» сбоку от стакана, а не под кнопками */
+    .tetris-layout {
+        grid-template-columns: minmax(0, 1fr) 76px;
+        gap: 8px;
+    }
+
+    .tetris-side {
+        width: auto;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 4px;
+        font-size: 11px;
+        text-align: center;
+    }
+
+    .tetris-next {
+        width: 64px;
+        height: 64px;
+        margin: 0;
+    }
+
+    .hockey-score {
+        margin: 0;
+        font-size: 24px;
+    }
+}
+
+.game-toolbar .hockey-score {
+    margin: 0;
+}
+
+/* ---------- Телефон в альбомной ориентации ----------
+   Кнопки «висят» по краям экрана поверх свободного места слева и справа
+   от поля, как в мобильных играх, - поле остаётся большим. */
+@media (orientation: landscape) and (max-height: 500px) and (any-pointer: coarse) {
+    body.in-game .game-box .mobile-controls,
+    body.in-game .game-box .mobile-game-controls,
+    body.in-game .game-box .pong-mobile-controls {
+        position: fixed;
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(10px, env(safe-area-inset-bottom));
+        z-index: 30;
+        width: auto;
+        max-width: none;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        pointer-events: none;
+    }
+
+    body.in-game .game-box .snake-mobile-controls {
+        display: flex;
+    }
+
+    body.in-game .game-box .mobile-controls > *,
+    body.in-game .game-box .mobile-game-controls > *,
+    body.in-game .game-box .pong-mobile-controls > * {
+        pointer-events: auto;
+    }
+
+    body.in-game .game-box .mobile-controls > button,
+    body.in-game .game-box .mobile-game-button {
+        flex: 0 0 auto;
+        width: 96px;
+        min-height: 64px;
+        opacity: .92;
+    }
+
+    /* Крестовина - справа */
+    body.in-game .game-box .mobile-dpad {
+        margin: 0 0 0 auto;
+    }
+
+    body.in-game .game-box .mobile-dpad .mobile-control {
+        width: 58px;
+        height: 50px;
+        opacity: .92;
+    }
+
+    /* Аэрохоккей: синяя крестовина слева, красная справа */
+    body.in-game .game-box .hockey-controls .mobile-dpad {
+        margin: 0;
+    }
+
+    body.in-game .game-box .hockey-controls .hockey-dpad-red {
+        margin-left: auto;
+    }
+
+    /* Space Invaders: ← → слева, огонь справа */
+    body.in-game .game-box .mobile-controls [data-action="left"] {
+        order: 1;
+    }
+
+    body.in-game .game-box .mobile-controls [data-action="right"] {
+        order: 2;
+        margin-left: 8px;
+    }
+
+    body.in-game .game-box .mobile-controls [data-action="shoot"] {
+        order: 3;
+        margin-left: auto;
+    }
+
+    /* Flappy Bird: прыжок справа */
+    body.in-game .game-box .flappy-jump {
+        margin-left: auto;
+    }
+
+    /* Pong: у каждого игрока своя колонка ▲▼ у края */
+    body.in-game .game-box .pong-control-group {
+        flex-direction: column;
+    }
+
+    body.in-game .game-box .pong-control-group button {
+        min-width: 64px;
+        min-height: 56px;
+    }
+
+    /* Tetris: блок кнопок справа внизу */
+    body.in-game .game-box .tetris-controls {
+        position: fixed;
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(10px, env(safe-area-inset-bottom));
+        z-index: 30;
+        width: 200px;
+        margin: 0;
+    }
+}
+
+/* ---------- Tank Battle, Boxing, Aim Trainer, Endless Runner ---------- */
+
+.toolbar-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.duo-score {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.duo-score-1,
+.duo-name-1 {
+    color: #6aa8ff;
+}
+
+.duo-score-2,
+.duo-name-2 {
+    color: #ff7a7a;
+}
+
+.duo-score-1,
+.duo-score-2 {
+    font-size: 18px;
+}
+
+.duo-controls {
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.duo-pad {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 0;
+}
+
+.duo-pad-1 .mobile-control {
+    border-color: #2f6fd0;
+}
+
+.duo-pad-2 .mobile-control {
+    border-color: #c43232;
+}
+
+.game-box .duo-action {
+    min-height: clamp(42px, 6.5svh, 54px);
+    padding: 0 8px;
+    border: 1px solid #333;
+    border-radius: 12px;
+    background: #111;
+    color: #fff;
+    font-size: clamp(13px, 3.8vw, 16px);
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.game-box .duo-pad-1 .duo-fire {
+    background: #1d3a66;
+    border-color: #2f6fd0;
+}
+
+.game-box .duo-pad-2 .duo-fire {
+    background: #5c1d1d;
+    border-color: #c43232;
+}
+
+.game-box .duo-action.pressed {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+
+.box-pad-row {
+    display: flex;
+    gap: clamp(3px, 1vw, 6px);
+}
+
+.box-pad-row > button {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.box-pad .mobile-control {
+    width: clamp(40px, 12.5vw, 56px);
+    height: clamp(40px, 6.5svh, 52px);
+    font-size: clamp(16px, 5vw, 22px);
+}
+
+.aim-hud {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.aim-hud div {
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid #222;
+    border-radius: 8px;
+    background: #0b0d0b;
+    text-align: center;
+}
+
+.aim-hud span {
+    display: block;
+    overflow: hidden;
+    color: #8b938b;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aim-hud strong {
+    display: block;
+    color: #fff;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+.aim-canvas {
+    cursor: crosshair;
+}
+
+.aim-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.aim-footer .game-status {
+    margin: 10px 0 0;
+}
+
+.aim-footer .game-button {
+    margin-top: 10px;
+    flex: none;
+}
+
+.aim-modes {
+    flex-wrap: wrap;
+}
+
+.game-box .aim-best {
+    color: #8b938b;
+    font-size: 12px;
+}
+
+@media (max-width: 560px) {
+    .aim-hud {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 6px;
+    }
+
+    .aim-hud div {
+        padding: 3px 4px;
+    }
+
+    .aim-hud strong {
+        font-size: 14px;
+    }
+
+    .aim-modes .mode-button {
+        flex: 1 1 calc(50% - 6px);
+        padding: 6px 4px;
+        font-size: 13px;
+    }
+}
+
+/* В альбомной ориентации у каждого игрока своя панель у своего края */
+@media (orientation: landscape) and (max-height: 500px) and (any-pointer: coarse) {
+    body.in-game .game-box .duo-pad .mobile-dpad {
+        margin: 0;
+    }
+
+    body.in-game .game-box .duo-controls .duo-pad {
+        width: auto;
+    }
+}
+
+.mobile-controls .mobile-control,
+.mobile-controls .duo-action {
+    min-width: 0;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (any-pointer: coarse) {
+    body.in-game .game-box .mobile-dpad.compact .mobile-control,
+    body.in-game .game-box .box-pad .mobile-control {
+        width: 46px;
+        height: 42px;
+    }
+
+    body.in-game .game-box .duo-controls {
+        bottom: max(6px, env(safe-area-inset-bottom));
+    }
+
+    /* Aim Trainer: HUD слева от поля, чтобы поле было больше */
+    .aim-game {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        grid-template-areas:
+            "modes modes"
+            "hud canvas"
+            "footer canvas"
+            "best canvas";
+        grid-template-rows: auto auto auto 1fr;
+        column-gap: 10px;
+        align-items: start;
+    }
+
+    .aim-modes {
+        grid-area: modes;
+        margin-bottom: 6px;
+    }
+
+    .aim-hud {
+        grid-area: hud;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        margin: 0;
+    }
+
+    .aim-hud div {
+        padding: 3px 4px;
+    }
+
+    .aim-hud strong {
+        font-size: 13px;
+    }
+
+    .aim-canvas {
+        grid-area: canvas;
+    }
+
+    .aim-footer {
+        grid-area: footer;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .aim-footer .game-status {
+        display: none;
+    }
+
+    .game-box .aim-best {
+        grid-area: best;
+        margin-top: 4px;
+        font-size: 11px;
+        text-align: left;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (any-pointer: coarse) {
+    body.in-game .boxing-canvas,
+    body.in-game .tank-canvas {
+        max-width: calc(100vw - 350px);
+    }
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (any-pointer: coarse) {
+    body.in-game .game-box .duo-controls .box-pad {
+        width: 148px;
+    }
+
+    body.in-game .game-box .box-pad .duo-action {
+        font-size: 13px;
+        padding: 0 4px;
+    }
+}

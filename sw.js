@@ -1,4 +1,4 @@
-const CACHE_NAME = "gamebox-v4";
+const CACHE_NAME = "gamebox-v5";
 
 const FILES = [
     "./",
@@ -9,14 +9,17 @@ const FILES = [
     "./css/games.css",
     "./js/app.js",
     "./js/games/2048.js",
+    "./js/games/aim-trainer.js",
     "./js/games/air-hockey.js",
     "./js/games/battleship.js",
     "./js/games/billiards.js",
+    "./js/games/boxing.js",
     "./js/games/breakout.js",
     "./js/games/car-dodge.js",
     "./js/games/chess.js",
     "./js/games/connect-four.js",
     "./js/games/doodle-jump.js",
+    "./js/games/endless-runner.js",
     "./js/games/flappy-bird.js",
     "./js/games/memory.js",
     "./js/games/minesweeper.js",
@@ -29,6 +32,7 @@ const FILES = [
     "./js/games/snake.js",
     "./js/games/space-invaders.js",
     "./js/games/sudoku.js",
+    "./js/games/tank-battle.js",
     "./js/games/tetris.js",
     "./js/games/tic-tac-toe.js",
 ];
